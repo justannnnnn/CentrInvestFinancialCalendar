@@ -8,10 +8,12 @@ import androidx.lifecycle.viewModelScope
 import com.example.sdk.data.network.dto.TransactionDto
 import com.example.sdk.data.network.dto.TransactionType
 import com.example.sdk.domain.repository.TransactionsRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
 
+@HiltViewModel
 class CalendarViewModel @Inject constructor(
     private val repo: TransactionsRepository
 ) : ViewModel() {

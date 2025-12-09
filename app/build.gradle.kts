@@ -60,8 +60,8 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(project(":sdk"))
 
-    implementation(libs.hilt.android.v254)
-    kapt(libs.hilt.android.compiler)
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.compiler)
 
     implementation(libs.androidx.hilt.navigation.compose.v110)
 }
