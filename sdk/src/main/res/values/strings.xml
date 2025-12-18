@@ -1,0 +1,5 @@
+<resources>
+    <string name="month">Месяц</string>
+    <string name="week">Неделя</string>
+    <string name="day">День</string>
+</resources>

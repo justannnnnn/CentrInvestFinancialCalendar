@@ -1,8 +1,9 @@
 package com.example.sdk.presentation
 
-import android.app.Activity
-import android.content.Context
-import android.content.ContextWrapper
+import android.graphics.Color
+import android.os.Build
+import androidx.annotation.RequiresApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -11,11 +12,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -26,73 +30,60 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarToday
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.view.WindowCompat
+import androidx.core.view.WindowCompat.getInsetsController
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.example.sdk.presentation.models.ViewModeTab
 import com.example.sdk.ui.theme.Gray100
 import com.example.sdk.ui.theme.Gray500
 import com.example.sdk.ui.theme.Gray900
 import com.example.sdk.ui.theme.GreenPrimary
 import com.example.sdk.ui.theme.White
+import com.example.sdk.utils.findActivity
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.Locale
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.layout.offset
 
-// Extension для поиска Activity из Context
-fun Context.findActivity(): Activity? = when (this) {
-    is Activity -> this
-    is ContextWrapper -> baseContext.findActivity()
-    else -> null
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun FinancialCalendarView() {
+fun FinancialCalendarView(viewModel: CalendarViewModel = hiltViewModel()) {
     val context = LocalContext.current
+    val uiState by viewModel.uiState.collectAsState()
 
-    // Делаем статус-бар тёмным (чёрные иконки)
-    remember {
+    LaunchedEffect(Unit) {
         context.findActivity()?.window?.let { window ->
-            val insetsController = WindowCompat.getInsetsController(window, window.decorView)
-            insetsController.isAppearanceLightStatusBars = false // Чёрные иконки
-            window.statusBarColor = android.graphics.Color.WHITE // Белый фон статус-бара
+            getInsetsController(window, window.decorView)
+                .isAppearanceLightStatusBars = true
+            window.statusBarColor = Color.TRANSPARENT
         }
     }
-
-    var currentYearMonth by remember { mutableStateOf(YearMonth.of(2025, 11)) }
-    var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
-    var selectedViewMode by remember { mutableStateOf("month") }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             CalendarHeader(
-                yearMonth = currentYearMonth,
-                onPrevMonth = { currentYearMonth = currentYearMonth.minusMonths(1) },
-                onNextMonth = { currentYearMonth = currentYearMonth.plusMonths(1) },
+                yearMonth = uiState.currentYearMonth,
+                onPrevMonth = { viewModel.onPrevMonth() },
+                onNextMonth = { viewModel.onNextMonth() },
                 onAddClick = { /* TODO: открыть добавление */ }
             )
         }
@@ -104,26 +95,30 @@ fun FinancialCalendarView() {
                 .windowInsetsPadding(WindowInsets.statusBars)
         ) {
             ViewModeTabs(
-                selectedMode = selectedViewMode,
-                onModeSelected = { selectedViewMode = it }
+                tabs = uiState.viewModeTabs,
+                selectedMode = uiState.selectedViewMode,
+                onModeSelected = { viewModel.onChangeViewMode(it) }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            if (selectedViewMode == "month") {
-                MonthCalendarGrid(
-                    yearMonth = currentYearMonth,
-                    selectedDate = selectedDate,
-                    onDateSelected = { date -> selectedDate = date },
-                    dayHasOperations = { date -> date.dayOfMonth % 5 == 0 || date.dayOfMonth % 3 == 0 },
-                    dayHasRecurring = { date -> date.dayOfMonth == 1 || date.dayOfMonth == 10 }
-                )
-            } else {
-                Text(
-                    text = "$selectedViewMode — в разработке",
-                    modifier = Modifier.padding(16.dp),
-                    color = Gray500
-                )
+            when (uiState.selectedViewMode) {
+                ViewModeTab.Month -> {
+                    MonthCalendarGrid(
+                        yearMonth = uiState.currentYearMonth,
+                        selectedDate = uiState.selectedDate,
+                        onDateSelected = { viewModel.onSelectDate(it) },
+                        dayHasOperations = { date -> date.dayOfMonth % 5 == 0 || date.dayOfMonth % 3 == 0 },
+                        dayHasRecurring = { date -> date.dayOfMonth == 1 || date.dayOfMonth == 10 }
+                    )
+                }
+                else -> {
+                    Text(
+                        text = stringResource(uiState.selectedViewMode.name) + " — в разработке",
+                        modifier = Modifier.padding(16.dp),
+                        color = Gray500
+                    )
+                }
             }
         }
     }
@@ -143,7 +138,7 @@ private fun CalendarHeader(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
-            .padding(top = 16.dp, start = 16.dp, end = 16.dp, bottom = 24.dp) // Больше отступ снизу для кнопки
+            .padding(top = 16.dp, start = 16.dp, end = 16.dp, bottom = 24.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -199,14 +194,13 @@ private fun CalendarHeader(
                 )
             }
 
-            Spacer(modifier = Modifier.width(56.dp)) // Зарезервировать место под кнопку
+            Spacer(modifier = Modifier.width(56.dp))
         }
 
-        // Кнопка "+" вынесена поверх
         Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .offset(y = 20.dp) // Легко опускаем ниже верхнего края, но не на статус-бар
+                .offset(y = 20.dp)
                 .size(56.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .background(GreenPrimary)
@@ -233,7 +227,7 @@ private fun MonthCalendarGrid(
 ) {
     val firstDayOfMonth = yearMonth.atDay(1)
     val daysInMonth = yearMonth.lengthOfMonth()
-    val firstDayOffset = (firstDayOfMonth.dayOfWeek.value % 7) // 0 = Понедельник
+    val firstDayOffset = (firstDayOfMonth.dayOfWeek.value % 7)
 
     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
         // Дни недели
@@ -272,7 +266,7 @@ private fun MonthCalendarGrid(
 
                 Box(
                     modifier = Modifier
-                        .size(48.dp) // Фиксированный размер ячейки
+                        .size(48.dp)
                         .clip(RoundedCornerShape(12.dp))
                         .background(if (isSelected) GreenPrimary.copy(alpha = 0.12f) else White)
                         .border(
@@ -309,14 +303,15 @@ private fun MonthCalendarGrid(
             }
         }
 
-        Spacer(modifier = Modifier.height(32.dp)) // Отступ снизу для статистики потом
+        Spacer(modifier = Modifier.height(32.dp))
     }
 }
 
 @Composable
 private fun ViewModeTabs(
-    selectedMode: String,
-    onModeSelected: (String) -> Unit
+    tabs: List<ViewModeTab>,
+    selectedMode: ViewModeTab,
+    onModeSelected: (ViewModeTab) -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -324,31 +319,19 @@ private fun ViewModeTabs(
             .padding(horizontal = 32.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        ViewModeTab(
-            icon = "grid", // 2×2 точки
-            label = "Месяц",
-            isSelected = selectedMode == "month",
-            onClick = { onModeSelected("month") }
-        )
-        ViewModeTab(
-            icon = "week", // три полоски
-            label = "Неделя",
-            isSelected = selectedMode == "week",
-            onClick = { onModeSelected("week") }
-        )
-        ViewModeTab(
-            icon = "day", // одна полоска
-            label = "День",
-            isSelected = selectedMode == "day",
-            onClick = { onModeSelected("day") }
-        )
+        tabs.forEach {
+            ViewModeTabUi(
+                tab = it,
+                isSelected = selectedMode == it,
+                onClick = { onModeSelected(it) }
+            )
+        }
     }
 }
 
 @Composable
-private fun ViewModeTab(
-    icon: String,
-    label: String,
+private fun ViewModeTabUi(
+    tab: ViewModeTab,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
@@ -359,19 +342,15 @@ private fun ViewModeTab(
             .clickable { onClick() }
             .padding(8.dp)
     ) {
-        Box(
+        Image(
+            painter = painterResource(tab.icon),
+            contentDescription = null,
             modifier = Modifier.size(40.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            when (icon) {
-                "grid" -> MonthIcon(isSelected)
-                "week" -> WeekIcon(isSelected)
-                "day" -> DayIcon(isSelected)
-            }
-        }
+            alignment = Alignment.Center
+        )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = label,
+            text = stringResource(tab.name),
             fontSize = 12.sp,
             color = if (isSelected) GreenPrimary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
             fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal
