@@ -1,4 +1,4 @@
-package com.example.centrinvestfinancialcalendar.ui.theme
+package com.example.sdk.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
