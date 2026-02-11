@@ -67,4 +67,6 @@ dependencies {
     implementation(libs.androidx.hilt.lifecycle.viewmodel)
     kapt(libs.androidx.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
+
+    implementation(libs.androidx.material.icons.extended)
 }

@@ -1,5 +1,7 @@
 package com.example.sdk.presentation
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -8,11 +10,19 @@ import androidx.lifecycle.viewModelScope
 import com.example.sdk.data.network.dto.TransactionDto
 import com.example.sdk.data.network.dto.TransactionType
 import com.example.sdk.domain.repository.TransactionsRepository
+import com.example.sdk.presentation.models.ViewModeTab
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.selects.select
+import java.time.LocalDate
 import java.util.UUID
 import javax.inject.Inject
 
+@RequiresApi(Build.VERSION_CODES.O)
 @HiltViewModel
 class CalendarViewModel @Inject constructor(
     private val repo: TransactionsRepository
@@ -24,16 +34,6 @@ class CalendarViewModel @Inject constructor(
     var amountInput by mutableStateOf("")
     var categoryInput by mutableStateOf("")
     var noteInput by mutableStateOf("")
-
-    init {
-        reload()
-    }
-
-    private fun reload() {
-        viewModelScope.launch {
-            transactions = repo.getAll()
-        }
-    }
 
     fun addTransaction() {
         val tx = TransactionDto(
@@ -48,10 +48,28 @@ class CalendarViewModel @Inject constructor(
 
         viewModelScope.launch {
             repo.add(tx)
-            reload()
             amountInput = ""
             categoryInput = ""
             noteInput = ""
         }
+    }
+
+    private val _uiState = MutableStateFlow(CalendarUiState())
+    val uiState: StateFlow<CalendarUiState> = _uiState.asStateFlow()
+
+    fun onPrevMonth() {
+        _uiState.update { it.copy(currentYearMonth = it.currentYearMonth.minusMonths(1)) }
+    }
+
+    fun onNextMonth() {
+        _uiState.update { it.copy(currentYearMonth = it.currentYearMonth.plusMonths(1)) }
+    }
+
+    fun onSelectDate(date: LocalDate) {
+        _uiState.update { it.copy(selectedDate = date) }
+    }
+
+    fun onChangeViewMode(mode: ViewModeTab) {
+        _uiState.update { it.copy(selectedViewMode = mode) }
     }
 }
