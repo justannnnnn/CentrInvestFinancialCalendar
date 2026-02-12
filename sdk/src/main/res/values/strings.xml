@@ -2,4 +2,7 @@
     <string name="month">Месяц</string>
     <string name="week">Неделя</string>
     <string name="day">День</string>
+
+    <string name="incomes">Доходы</string>
+    <string name="expenses">Расходы</string>
 </resources>

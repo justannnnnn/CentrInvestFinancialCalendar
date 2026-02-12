@@ -1,60 +1,96 @@
 package com.example.sdk.presentation.statistics
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardColors
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.sdk.R
 import com.example.sdk.ui.theme.Gray500
 import com.example.sdk.ui.theme.GreenPrimary
+import java.text.NumberFormat
+import java.util.Locale
 
 @Composable
-fun StatsSummaryBlock() {
-    Row(
+fun StatsSummaryBlock(
+    incomeSum: Long,
+    expenseSum: Long
+) {
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
+            //.padding(top = 6.dp)
     ) {
-        Text(
-            text = "Доходы",
-            fontSize = 14.sp,
-            color = Gray500
-        )
-        Text(
-            text = "80 000 ₽",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            color = GreenPrimary
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            StatsCard(
+                sum = incomeSum,
+                isIncome = true
+            )
+            StatsCard(
+                sum = expenseSum,
+                isIncome = false
+            )
+        }
     }
+}
 
-    Spacer(modifier = Modifier.height(8.dp))
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
+@Composable
+private fun RowScope.StatsCard(
+    sum: Long,
+    isIncome: Boolean
+) {
+    Card(
+        modifier = Modifier.weight(1f),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardColors(
+            containerColor = Color(0xFFF5F6F8),
+            contentColor = Color(0xFFF5F6F8),
+            disabledContainerColor = Color(0xFFF5F6F8),
+            disabledContentColor = Color(0xFFF5F6F8)
+        )
     ) {
-        Text(
-            text = "Расходы",
-            fontSize = 14.sp,
-            color = Gray500
-        )
-        Text(
-            text = "-24 570 ₽",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFFF95E5A)
-        )
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.Center
+        ) {
+            val title = if (isIncome) R.string.incomes else R.string.expenses
+            val textColor = if (isIncome) Color(0xFF10B981) else Color(0xFFF43F5E)
+            Text(
+                text = stringResource(title),
+                fontSize = 12.sp,
+                color = Color(0xFF6B7280)
+            )
+            Text(
+                text = "${if (isIncome.not() && sum > 0) "-" else ""}${sum.formatSum()} ₽",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = textColor
+            )
+        }
     }
+}
+
+
+fun Long.formatSum(): String {
+    return NumberFormat
+        .getNumberInstance(Locale("ru", "RU"))
+        .format(this)
 }

@@ -1,33 +1,37 @@
 package com.example.sdk.presentation.components
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.sdk.ui.theme.Gray100
+import com.example.sdk.R
+import com.example.sdk.presentation.models.ViewModeTab
+import com.example.sdk.ui.theme.Gray500
+import com.example.sdk.ui.theme.Gray700
 import com.example.sdk.ui.theme.Gray900
 import com.example.sdk.ui.theme.GreenPrimary
 import com.example.sdk.ui.theme.White
+import java.text.DateFormatSymbols
 import java.util.Calendar
 import java.util.Locale
 import java.text.SimpleDateFormat
@@ -35,93 +39,154 @@ import java.text.SimpleDateFormat
 @Composable
 fun CalendarHeader(
     calendar: Calendar,
-    selectedViewMode: String,  // ← ДОБАВЛЕНО!
+    selectedViewMode: ViewModeTab,  // ← ДОБАВЛЕНО!
     onPrevMonth: () -> Unit,
     onNextMonth: () -> Unit,
     onAddClick: () -> Unit
 ) {
-    val monthName = calendar.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale("ru", "RU"))
-        ?.replaceFirstChar { it.uppercase() } ?: "Месяц"
-
-    val year = calendar.get(Calendar.YEAR)
-
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .background(White)
-            .padding(top = 64.dp, start = 16.dp, end = 16.dp, bottom = 12.dp)
+            .padding(top = 16.dp, start = 16.dp, end = 16.dp, bottom = 12.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Предыдущий месяц",
-                    tint = Gray900,
-                    modifier = Modifier
-                        .size(28.dp)
-                        .clickable { onPrevMonth() }
-                        .padding(4.dp)
-                )
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Gray100)
-                        .padding(horizontal = 14.dp, vertical = 2.dp)
-                        .clickable { /* PeriodSelector */ }
-                ) {
-                    Text(
-                        text = when (selectedViewMode) {
-                            "month" -> "$monthName $year"
-                            "week" -> getWeekRange(calendar)
-                            "day" -> getDayDate(calendar)
-                            else -> "$monthName $year"
-                        },
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Gray900
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("📅", fontSize = 18.sp)
-                }
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                    contentDescription = "Следующий месяц",
-                    tint = Gray900,
-                    modifier = Modifier
-                        .size(28.dp)
-                        .clickable { onNextMonth() }
-                        .padding(4.dp)
-                )
-            }
-
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(GreenPrimary)
-                    .clickable { onAddClick() },
-                contentAlignment = Alignment.Center
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Add,
-                    contentDescription = "Добавить операцию",
-                    tint = White,
-                    modifier = Modifier.size(28.dp)
+                ArrowButton(
+                    isLeft = true,
+                    onClick = onPrevMonth
+                )
+
+                PeriodSelector(
+                    title = when (selectedViewMode) {
+                        ViewModeTab.Day -> getDayDate(calendar)
+                        ViewModeTab.Week -> getWeekRange(calendar)
+                        ViewModeTab.Month ->
+                            "${getMonthNameNominative(calendar)} ${calendar.get(Calendar.YEAR)}"
+                    },
+                    onPeriodSelectorClick = {}
+                )
+
+                ArrowButton(
+                    isLeft = false,
+                    onClick = onNextMonth
                 )
             }
+            PlusButton(onClick = onAddClick)
         }
     }
+}
+
+@Composable
+private fun PlusButton(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(48.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(GreenPrimary)
+            .clickable { onClick.invoke() },
+        contentAlignment = Alignment.Center
+    ) {
+        IconWrapper(
+            modifier = Modifier.size(28.dp),
+            iconRes = R.drawable.plus,
+            color = White
+        )
+    }
+}
+
+@Composable
+private fun PeriodSelector(
+    title: String,
+    onPeriodSelectorClick: () -> Unit
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier
+            .height(40.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onPeriodSelectorClick)
+            .padding(horizontal = 12.dp)
+    ) {
+        Text(
+            modifier = Modifier.padding(top = 2.dp),
+            text = title,
+            fontSize = 16.sp,
+            fontFamily = FontFamily.SansSerif,
+            fontWeight = FontWeight.W400,
+            color = Gray900
+        )
+        Box(
+            modifier = Modifier.size(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            IconWrapper(
+                modifier = Modifier.fillMaxSize(),
+                iconRes = R.drawable.calendar,
+                color = Gray500
+            )
+        }
+    }
+}
+
+@Composable
+private fun ArrowButton(
+    isLeft: Boolean,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .size(40.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        val icon = if (isLeft) R.drawable.chevron_left else R.drawable.chevron_right
+        IconWrapper(
+            iconRes = icon,
+            color = Gray700,
+            modifier = Modifier.size(20.dp)
+        )
+    }
+}
+
+@Composable
+fun IconWrapper(
+    modifier: Modifier = Modifier,
+    @DrawableRes iconRes: Int,
+    color: Color
+) {
+    Icon(
+        modifier = modifier,
+        painter = painterResource(iconRes),
+        tint = color,
+        contentDescription = null
+    )
+}
+
+fun getMonthNameNominative(calendar: Calendar, locale: Locale = Locale("ru", "RU")): String {
+    val monthIndex = calendar.get(Calendar.MONTH)
+    val ruMonths = arrayOf(
+        "январь", "февраль", "март", "апрель", "май", "июнь",
+        "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"
+    )
+
+    val name = if (locale.language == "ru") {
+        ruMonths[monthIndex]
+    } else {
+        DateFormatSymbols(locale).months[monthIndex]
+    }
+
+    return name.replaceFirstChar { it.uppercase(locale) }
 }
 
 private fun getWeekRange(calendar: Calendar): String {
