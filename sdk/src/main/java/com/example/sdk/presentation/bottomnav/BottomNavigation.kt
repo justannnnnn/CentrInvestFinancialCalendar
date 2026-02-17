@@ -3,6 +3,7 @@ package com.example.sdk.presentation.bottomnav
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,6 +25,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.sdk.ui.theme.Gray100
 import com.example.sdk.ui.theme.Gray500
 import com.example.sdk.ui.theme.GreenPrimary
 import com.example.sdk.ui.theme.White
@@ -33,19 +35,29 @@ fun BottomNavigationBar(
     selectedTab: String,
     onTabSelected: (String) -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(White)
-            .padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly
-    ) {
-        BottomNavItem("Главная", Icons.Default.Home, selectedTab == "home") { onTabSelected("home") }
-        BottomNavItem("Переводы", Icons.AutoMirrored.Filled.Send, selectedTab == "transfers") { onTabSelected("transfers") }
-        BottomNavItem("Статистика", Icons.Default.PieChart, selectedTab == "stats") { onTabSelected("stats") }
-        BottomNavItem("Календарь", null, selectedTab == "calendar") { onTabSelected("calendar") }
-        BottomNavItem("Профиль", Icons.Default.Person, selectedTab == "profile") { onTabSelected("profile") }
-    }
+    Column {
+        // Верхняя граница
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(Gray100)
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(White)
+                .padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            BottomNavItem("Главная", Icons.Default.Home, selectedTab == "home") { onTabSelected("home") }
+            BottomNavItem("Переводы", Icons.AutoMirrored.Filled.Send, selectedTab == "transfers") { onTabSelected("transfers") }
+            BottomNavItem("Статистика", Icons.Default.PieChart, selectedTab == "stats") { onTabSelected("stats") }
+            BottomNavItem("Календарь", null, selectedTab == "calendar") { onTabSelected("calendar") }
+            BottomNavItem("Профиль", Icons.Default.Person, selectedTab == "profile") { onTabSelected("profile") }
+        }
+    } // ← ЭТОЙ СКОБКИ НЕ ХВАТАЛО (закрывает Column)
 }
 
 @Composable

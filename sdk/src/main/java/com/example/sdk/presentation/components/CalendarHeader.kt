@@ -30,10 +30,12 @@ import com.example.sdk.ui.theme.GreenPrimary
 import com.example.sdk.ui.theme.White
 import java.util.Calendar
 import java.util.Locale
+import java.text.SimpleDateFormat
 
 @Composable
 fun CalendarHeader(
     calendar: Calendar,
+    selectedViewMode: String,  // ← ДОБАВЛЕНО!
     onPrevMonth: () -> Unit,
     onNextMonth: () -> Unit,
     onAddClick: () -> Unit
@@ -76,7 +78,12 @@ fun CalendarHeader(
                         .clickable { /* PeriodSelector */ }
                 ) {
                     Text(
-                        text = "$monthName $year",
+                        text = when (selectedViewMode) {
+                            "month" -> "$monthName $year"
+                            "week" -> getWeekRange(calendar)
+                            "day" -> getDayDate(calendar)
+                            else -> "$monthName $year"
+                        },
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Medium,
                         color = Gray900
@@ -115,4 +122,26 @@ fun CalendarHeader(
             }
         }
     }
+}
+
+private fun getWeekRange(calendar: Calendar): String {
+    val dayFormat = SimpleDateFormat("d", Locale("ru"))
+    val monthFormat = SimpleDateFormat("MMMM yyyy", Locale("ru"))
+    val calendarCopy = calendar.clone() as Calendar
+
+    // Начало недели (понедельник)
+    calendarCopy.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+    val startDay = dayFormat.format(calendarCopy.time)
+
+    // Конец недели (воскресенье)
+    calendarCopy.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY)
+    val endDay = dayFormat.format(calendarCopy.time)
+    val monthYear = monthFormat.format(calendarCopy.time)
+
+    return "$startDay - $endDay $monthYear"
+}
+
+private fun getDayDate(calendar: Calendar): String {
+    val dateFormat = SimpleDateFormat("d MMMM yyyy", Locale("ru"))
+    return dateFormat.format(calendar.time)
 }

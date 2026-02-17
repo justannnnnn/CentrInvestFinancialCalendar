@@ -30,6 +30,8 @@ import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import com.example.sdk.presentation.bottomnav.BottomNavigationBar
 import com.example.sdk.presentation.calendar.MonthCalendarGrid
+import com.example.sdk.presentation.calendar.WeekCalendarGrid
+import com.example.sdk.presentation.calendar.DayCalendarGrid
 import com.example.sdk.presentation.components.CalendarHeader
 import com.example.sdk.presentation.components.ViewModeTabs
 import com.example.sdk.ui.theme.Gray100
@@ -67,6 +69,7 @@ fun FinancialCalendarView() {
         topBar = {
             CalendarHeader(
                 calendar = currentMonth,
+                selectedViewMode = selectedViewMode,
                 onPrevMonth = {
                     currentMonth = currentMonth.apply { add(Calendar.MONTH, -1) }
                 },
@@ -102,24 +105,70 @@ fun FinancialCalendarView() {
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            if (selectedViewMode == "month") {
-                MonthCalendarGrid(
-                    calendar = currentMonth,
-                    selectedDay = selectedDay,
-                    onDaySelected = { day: Int ->
-                        selectedDay = day
-                        showBottomSheet = true
-                    },
-                    dayHasOperations = { day: Int -> day % 5 == 0 || day % 3 == 0 },
-                    dayHasRecurring = { day: Int -> day == 1 || day == 10 }
-                )
-            } else {
-                Text(
-                    text = "${selectedViewMode.replaceFirstChar { it.uppercase() }} — в разработке",
-                    modifier = Modifier.padding(16.dp),
-                    fontSize = 16.sp,
-                    color = Gray500
-                )
+//            if (selectedViewMode == "month") {
+//                MonthCalendarGrid(
+//                    calendar = currentMonth,
+//                    selectedDay = selectedDay,
+//                    onDaySelected = { day: Int ->
+//                        selectedDay = day
+//                        showBottomSheet = true
+//                    },
+//                    dayHasOperations = { day: Int -> day % 5 == 0 || day % 3 == 0 },
+//                    dayHasRecurring = { day: Int -> day == 1 || day == 10 }
+//                )
+//            } else {
+//                Text(
+//                    text = "${selectedViewMode.replaceFirstChar { it.uppercase() }} — в разработке",
+//                    modifier = Modifier.padding(16.dp),
+//                    fontSize = 16.sp,
+//                    color = Gray500
+//                )
+//            }
+            when (selectedViewMode) {
+                "month" -> {
+                    MonthCalendarGrid(
+                        calendar = currentMonth,
+                        selectedDay = selectedDay,
+                        onDaySelected = { day: Int ->
+                            selectedDay = day
+                            showBottomSheet = true
+                        },
+                        dayHasOperations = { day: Int -> day % 5 == 0 || day % 3 == 0 },
+                        dayHasRecurring = { day: Int -> day == 1 || day == 10 }
+                    )
+                }
+                "week" -> {
+                    WeekCalendarGrid(
+                        calendar = currentMonth,
+                        selectedDay = selectedDay,
+                        onDaySelected = { day: Int ->
+                            selectedDay = day
+                            showBottomSheet = true
+                        },
+                        dayHasOperations = { day: Int -> day % 5 == 0 || day % 3 == 0 },
+                        dayHasRecurring = { day: Int -> day == 1 || day == 10 }
+                    )
+                }
+                "day" -> {
+                    DayCalendarGrid(
+                        calendar = currentMonth,
+                        selectedDay = selectedDay,
+                        onDaySelected = { day: Int ->
+                            selectedDay = day
+                            showBottomSheet = true
+                        },
+                        dayHasOperations = { day: Int -> day % 5 == 0 || day % 3 == 0 },
+                        dayHasRecurring = { day: Int -> day == 1 || day == 10 }
+                    )
+                }
+                else -> {
+                    Text(
+                        text = "${selectedViewMode.replaceFirstChar { it.uppercase() }} — в разработке",
+                        modifier = Modifier.padding(16.dp),
+                        fontSize = 16.sp,
+                        color = Gray500
+                    )
+                }
             }
         }
 
