@@ -22,9 +22,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.sdk.R
+import com.example.sdk.domain.model.DayData
+import com.example.sdk.presentation.statistics.formatSum
 import com.example.sdk.ui.theme.Gray100
 import com.example.sdk.ui.theme.Gray500
 import com.example.sdk.ui.theme.Gray600
@@ -38,11 +42,10 @@ import kotlin.math.abs
 fun WeekCalendarGrid(
     calendar: Calendar,
     selectedDay: Int?,
+    daysData: Map<Int, DayData>,
     onDaySelected: (Int) -> Unit,
-    dayHasOperations: (Int) -> Boolean,
-    dayHasRecurring: (Int) -> Boolean
 ) {
-    val weekDays = getWeekDays(calendar)
+    val weekDays = getWeekDays(calendar, daysData)
     val weekTotal = weekDays.sumOf { it.amount }
 
     LazyColumn(
@@ -51,7 +54,6 @@ fun WeekCalendarGrid(
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Итого за неделю
         item {
             Row(
                 modifier = Modifier
@@ -61,12 +63,12 @@ fun WeekCalendarGrid(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Итого за неделю:",
+                    text = stringResource(R.string.week_summary),
                     fontSize = 16.sp,
                     color = Gray500
                 )
                 Text(
-                    text = if (weekTotal < 0) "- ${abs(weekTotal)} ₽" else "+ $weekTotal ₽",
+                    text = "${weekTotal.formatSum()} ₽",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = if (weekTotal < 0) Color(0xFFF95E5A) else GreenPrimary
@@ -74,7 +76,6 @@ fun WeekCalendarGrid(
             }
         }
 
-        // Первая строка - 4 дня (Пн, Вт, Ср, Чт)
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -85,15 +86,15 @@ fun WeekCalendarGrid(
                         dayItem = dayItem,
                         isSelected = selectedDay == dayItem.day,
                         onClick = { onDaySelected(dayItem.day) },
-                        hasOperations = dayHasOperations(dayItem.day),
-                        hasRecurring = dayHasRecurring(dayItem.day),
+                        hasOperations = daysData[dayItem.day]?.transactions
+                            ?.any { it.isPlanned.not() } == true,
+                        hasRecurring = daysData[dayItem.day]?.hasRecurring == true,
                         modifier = Modifier.weight(1f)
                     )
                 }
             }
         }
 
-        // Вторая строка - 3 дня (Пт, Сб, Вс)
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -104,8 +105,9 @@ fun WeekCalendarGrid(
                         dayItem = dayItem,
                         isSelected = selectedDay == dayItem.day,
                         onClick = { onDaySelected(dayItem.day) },
-                        hasOperations = dayHasOperations(dayItem.day),
-                        hasRecurring = dayHasRecurring(dayItem.day),
+                        hasOperations = daysData[dayItem.day]?.transactions
+                            ?.any { it.isPlanned.not() } == true,
+                        hasRecurring = daysData[dayItem.day]?.hasRecurring == true,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -128,10 +130,7 @@ private fun WeekDayCard(
             .height(120.dp)
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(
-                if (isSelected) GreenPrimary.copy(alpha = 0.05f)
-                else White
-            )
+            .background(if (isSelected) GreenPrimary.copy(alpha = 0.05f) else White)
             .border(
                 width = 2.dp,
                 color = if (isSelected) GreenPrimary else Gray100,
@@ -142,14 +141,12 @@ private fun WeekDayCard(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // День недели
         Text(
             text = dayItem.dayOfWeek,
             fontSize = 12.sp,
             color = Gray500
         )
 
-        // Число
         Text(
             text = dayItem.day.toString(),
             fontSize = 24.sp,
@@ -157,7 +154,6 @@ private fun WeekDayCard(
             color = if (isSelected) GreenPrimary else Gray900
         )
 
-        // Иконки операций
         Row(
             horizontalArrangement = Arrangement.Center,
             modifier = Modifier.height(20.dp)
@@ -169,12 +165,8 @@ private fun WeekDayCard(
             }
         }
 
-        // Сумма за день
         Text(
-            text = if (dayItem.amount < 0)
-                "- ${abs(dayItem.amount)}"
-            else
-                "+ ${dayItem.amount}",
+            text = dayItem.amount.formatSum(),
             fontSize = 12.sp,
             color = if (dayItem.amount < 0) Gray600 else GreenPrimary
         )
@@ -184,10 +176,13 @@ private fun WeekDayCard(
 private data class WeekDayItem(
     val day: Int,
     val dayOfWeek: String,
-    val amount: Int
+    val amount: Long
 )
 
-private fun getWeekDays(calendar: Calendar): List<WeekDayItem> {
+private fun getWeekDays(
+    calendar: Calendar,
+    daysData: Map<Int, DayData>
+): List<WeekDayItem> {
     val weekDays = mutableListOf<WeekDayItem>()
     val daysOfWeek = listOf("Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс")
 
@@ -200,24 +195,12 @@ private fun getWeekDays(calendar: Calendar): List<WeekDayItem> {
             WeekDayItem(
                 day = day,
                 dayOfWeek = daysOfWeek[index],
-                amount = getAmountForDay(day)
+                amount = daysData[day]?.transactions
+                    ?.sumOf { if (it.category?.isIncome == true) it.amount else -it.amount } ?: 0
             )
         )
         calendarCopy.add(Calendar.DAY_OF_MONTH, 1)
     }
 
     return weekDays
-}
-
-private fun getAmountForDay(day: Int): Int {
-    return when (day) {
-        11 -> -450
-        12 -> 2000
-        13 -> -1200
-        14 -> -890
-        15 -> -340
-        16 -> -2100
-        17 -> 500
-        else -> -(day * 100)
-    }
 }

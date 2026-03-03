@@ -47,7 +47,7 @@ fun FinancialCalendarView(
     LaunchedEffect(Unit) {
         context.findActivity()?.window?.let { window ->
             val insetsController = WindowCompat.getInsetsController(window, window.decorView)
-            insetsController.isAppearanceLightStatusBars = true
+            insetsController.isAppearanceLightStatusBars = false
             window.statusBarColor = android.graphics.Color.TRANSPARENT
         }
     }
@@ -66,10 +66,10 @@ fun FinancialCalendarView(
         containerColor = Color.White,
         topBar = {
             CalendarHeader(
-                calendar = uiState.selectedMonth,
+                calendar = uiState.selectedPeriod,
                 selectedViewMode = uiState.selectedViewMode,
-                onPrevMonth = { viewModel.onAction(CalendarUiAction.OnPrevMonthClick) },
-                onNextMonth = { viewModel.onAction(CalendarUiAction.OnNextMonthClick) },
+                onPrevMonth = { viewModel.onAction(CalendarUiAction.OnPrevPeriodClick) },
+                onNextMonth = { viewModel.onAction(CalendarUiAction.OnNextPeriodClick) },
                 onAddClick = { viewModel.onAction(CalendarUiAction.OnAddClick) }
             )
         },
@@ -102,26 +102,22 @@ fun FinancialCalendarView(
 
             when (uiState.selectedViewMode) {
                 ViewModeTab.Month -> MonthCalendarGrid(
-                    calendar = uiState.selectedMonth,
-                    selectedDay = uiState.selectedDate?.dayOfMonth,
+                    calendar = uiState.selectedPeriod,
+                    selectedDay = uiState.selectedDate?.time?.date,
                     daysData = uiState.daysData,
                     onDaySelected = { viewModel.onAction(CalendarUiAction.OnDaySelected(it)) }
                 )
 
                 ViewModeTab.Week -> WeekCalendarGrid(
-                    calendar = uiState.selectedMonth,
-                    selectedDay = uiState.selectedDate?.dayOfMonth,
-                    onDaySelected = { viewModel.onAction(CalendarUiAction.OnDaySelected(it))},
-                    dayHasOperations = { day: Int -> day % 5 == 0 || day % 3 == 0 },
-                    dayHasRecurring = { day: Int -> day == 1 || day == 10 }
+                    calendar = uiState.selectedPeriod,
+                    daysData = uiState.daysData,
+                    selectedDay = uiState.selectedDate?.time?.date,
+                    onDaySelected = { viewModel.onAction(CalendarUiAction.OnDaySelected(it)) }
                 )
 
                 ViewModeTab.Day -> DayCalendarGrid(
-                    calendar = uiState.selectedMonth,
-                    selectedDay = uiState.selectedDate?.dayOfMonth,
-                    onDaySelected = { viewModel.onAction(CalendarUiAction.OnDaySelected(it))},
-                    dayHasOperations = { day: Int -> day % 5 == 0 || day % 3 == 0 },
-                    dayHasRecurring = { day: Int -> day == 1 || day == 10 }
+                    calendar = uiState.selectedPeriod,
+                    daysData = uiState.daysData
                 )
             }
         }
@@ -135,11 +131,17 @@ fun FinancialCalendarView(
                 ),
                 containerColor = White,
             ) {
-                BottomSheetContent(
-                    selectedDay = uiState.selectedDate?.dayOfMonth,
-                    selectedMonth = uiState.selectedMonth,
-                    transactions = uiState.allMonthTransactions // передаем транзакции
-                )
+                val selectedDate = uiState.selectedDate
+                selectedDate?.let {
+                    DayDetailedBottomSheet(
+                        dayTransactions = uiState.allMonthTransactions.filter { transaction ->
+                            transaction.date.time.date == it.time.date
+                        },
+                        selectedDay = it,
+                        onClickAdd = { viewModel.onAction(CalendarUiAction.OnAddClick) },
+                        onClickTransaction = { }
+                    )
+                }
             }
         }
     }

@@ -1,5 +1,6 @@
 package com.example.sdk.presentation
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -9,12 +10,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -23,169 +26,84 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.sdk.R
+import com.example.sdk.domain.model.Transaction
+import com.example.sdk.presentation.components.IconWrapper
+import com.example.sdk.presentation.statistics.formatSum
 import com.example.sdk.ui.theme.Gray100
 import com.example.sdk.ui.theme.Gray500
 import com.example.sdk.ui.theme.Gray900
 import com.example.sdk.ui.theme.GreenPrimary
 import com.example.sdk.ui.theme.White
-import com.example.sdk.presentation.models.MockTransactions
-import com.example.sdk.presentation.models.Transaction as MockTransaction
-import com.example.sdk.domain.model.Transaction as DomainTransaction
-import java.text.SimpleDateFormat
+import com.example.sdk.utils.getDateFormat
+import com.example.sdk.utils.getQuantityStringRu
 import java.util.Calendar
-import java.util.Locale
-import kotlin.math.abs
 
+@SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
-fun BottomSheetContent(
-    selectedDay: Int?,
-    selectedMonth: Calendar = Calendar.getInstance(),
-    transactions: List<DomainTransaction> = emptyList()
+fun DayDetailedBottomSheet(
+    dayTransactions: List<Transaction>,
+    selectedDay: Calendar,
+    onClickAdd: () -> Unit,
+    onClickTransaction: () -> Unit
 ) {
-    val day = selectedDay ?: 14
-
-    // Получаем доменные транзакции
-    val domainDayTransactions = if (transactions.isNotEmpty()) {
-        transactions.filter { tx ->
-            val txCal = tx.date.clone() as Calendar
-            txCal.get(Calendar.YEAR) == selectedMonth.get(Calendar.YEAR) &&
-                    txCal.get(Calendar.MONTH) == selectedMonth.get(Calendar.MONTH) &&
-                    txCal.get(Calendar.DAY_OF_MONTH) == day
-        }
-    } else {
-        emptyList()
-    }
-
-    // Получаем моковые транзакции
-    val mockDayTransactions = if (transactions.isEmpty()) {
-        MockTransactions.list.filter { tx ->
-            tx.date.get(Calendar.DAY_OF_MONTH) == day
-        }
-    } else {
-        emptyList()
-    }
-
-    // Используем доменные, если есть, иначе моковые
-    val displayTransactions = if (domainDayTransactions.isNotEmpty()) {
-        domainDayTransactions
-    } else {
-        mockDayTransactions
-    }
-
-    val totalAmount = if (displayTransactions.isNotEmpty()) {
-        if (displayTransactions.first() is DomainTransaction) {
-            (displayTransactions as List<DomainTransaction>).sumOf { it.amount }.toInt()
-        } else {
-            (displayTransactions as List<MockTransaction>).sumOf { it.amount }.toInt()
-        }
-    } else 0
-
-    val mockDate = Calendar.getInstance().apply {
-        set(2025, Calendar.NOVEMBER, day)
-    }
-    val dateFormat = SimpleDateFormat("d MMMM, EEEE", Locale("ru"))
-    val formattedDate = dateFormat.format(mockDate.time)
-        .replaceFirstChar { it.uppercase() }
+    val scrollState = rememberScrollState()
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.7).dp)
+            .verticalScroll(scrollState)
             .background(White)
     ) {
-        // Верхняя панель с плюсиком
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            horizontalArrangement = Arrangement.Start,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(GreenPrimary)
-                    .clickable { /* Добавить операцию */ },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Добавить",
-                    tint = White,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-        }
-
-        // Дата
-        Text(
-            text = formattedDate,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            color = Gray900,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
-
-        // Краткая статистика
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "${displayTransactions.size} ${getOperationWord(displayTransactions.size)}",
-                fontSize = 14.sp,
-                color = Gray500
-            )
-            Text(
-                text = if (totalAmount < 0) "-${abs(totalAmount)} ₽" else "+$totalAmount ₽",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = if (totalAmount < 0) Color(0xFFF95E5A) else GreenPrimary
-            )
+            PlusButton(onClick = onClickAdd)
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            text = getDateFormat(selectedDay.time),
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            color = Gray900
+        )
 
-        // Список операций
-        if (displayTransactions.isNotEmpty()) {
-            if (displayTransactions.first() is DomainTransaction) {
-                // Показываем доменные транзакции
-                (displayTransactions as List<DomainTransaction>).forEach { tx ->
+        DayStats(
+            transactionCount = dayTransactions.size,
+            dayBalance = dayTransactions.sumOf {
+                if (it.category?.isIncome == true) it.amount else -it.amount
+            }
+        )
+
+        if (dayTransactions.isEmpty()) {
+            EmptyBottomSheetState()
+        } else {
+            dayTransactions.forEach { transaction ->
+                transaction.category.let {
+                    val title = if (transaction.note.isNullOrEmpty()) {
+                        it.title
+                    } else {
+                        transaction.note
+                    }
+
                     TransactionItem(
-                        icon = getEmojiForCategory(tx.category),
-                        name = tx.note ?: tx.category,
-                        category = tx.category,
-                        amount = tx.amount.toInt(),
-                        color = when (tx.category) {
-                            "Продукты" -> 0xFFFFA500
-                            "Транспорт" -> 0xFF1E90FF
-                            "Кафе" -> 0xFFFFA500
-                            "Зарплата" -> 0xFF00A86B
-                            else -> 0xFF808080
-                        }
-                    )
-                }
-            } else {
-                // Показываем моковые транзакции
-                (displayTransactions as List<MockTransaction>).forEach { tx ->
-                    TransactionItem(
-                        icon = tx.categoryEmoji,
-                        name = tx.title,
-                        category = tx.category,
-                        amount = tx.amount.toInt(),
-                        color = when (tx.category) {
-                            "Продукты" -> 0xFFFFA500
-                            "Транспорт" -> 0xFF1E90FF
-                            "Кафе" -> 0xFFFFA500
-                            "Зарплата" -> 0xFF00A86B
-                            else -> 0xFF808080
-                        }
+                        icon = it.icon,
+                        name = title,
+                        category = it.title,
+                        amount = transaction.amount * (if (it.isIncome.not()) -1 else 1),
+                        color = it.color,
+                        onClickTransaction = onClickTransaction
                     )
                 }
             }
@@ -200,13 +118,14 @@ private fun TransactionItem(
     icon: String,
     name: String,
     category: String,
-    amount: Int,
-    color: Long
+    amount: Long,
+    color: Long,
+    onClickTransaction: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { /* Открыть детали */ }
+            .clickable { onClickTransaction() }
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
@@ -215,7 +134,6 @@ private fun TransactionItem(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.weight(1f)
         ) {
-            // Иконка категории
             Box(
                 modifier = Modifier
                     .size(48.dp)
@@ -231,7 +149,6 @@ private fun TransactionItem(
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // Название и категория
             Column(
                 verticalArrangement = Arrangement.Center
             ) {
@@ -249,16 +166,14 @@ private fun TransactionItem(
             }
         }
 
-        // Сумма
         Text(
-            text = if (amount < 0) "- ${abs(amount)} ₽" else "+ $amount ₽",
+            text = "${amount.formatSum()} ₽",
             fontSize = 16.sp,
             fontWeight = FontWeight.Medium,
             color = if (amount < 0) Gray900 else GreenPrimary
         )
     }
 
-    // Разделитель
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -267,24 +182,58 @@ private fun TransactionItem(
     )
 }
 
-// для склонения слова "операция"
-private fun getOperationWord(count: Int): String {
-    return when {
-        count == 1 -> "операция"
-        count in 2..4 -> "операции"
-        else -> "операций"
+@Composable
+private fun EmptyBottomSheetState() {
+    // tODO
+}
+
+@Composable
+private fun PlusButton(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(40.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(GreenPrimary)
+            .clickable { onClick.invoke() },
+        contentAlignment = Alignment.Center
+    ) {
+        IconWrapper(
+            modifier = Modifier.size(24.dp),
+            iconRes = R.drawable.plus,
+            color = White
+        )
     }
 }
 
-private fun getEmojiForCategory(category: String): String {
-    return when (category.lowercase()) {
-        "продукты" -> "🛒"
-        "транспорт" -> "🚕"
-        "кафе" -> "☕"
-        "зарплата" -> "💰"
-        "жильё" -> "🏠"
-        "подписки" -> "🎬"
-        "развлечения" -> "🎥"
-        else -> "💳"
+@Composable
+private fun DayStats(
+    transactionCount: Int,
+    dayBalance: Long
+) {
+    Row(
+        modifier = Modifier
+            .padding(bottom = 8.dp)
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = LocalContext.current.getQuantityStringRu(
+                R.plurals.number_of_operations,
+                transactionCount
+            ),
+            fontSize = 14.sp,
+            color = Gray500
+        )
+        Text(
+            text = "${dayBalance.formatSum()} ₽",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = if (dayBalance < 0) Color(0xFFF95E5A) else Color(0xFF10B981)
+        )
     }
 }
+
+
+
