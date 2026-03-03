@@ -7,7 +7,7 @@ data class Transaction(
     val id: String,
     val amount: Long,
     val type: TransactionType,
-    val category: String,
+    val category: Category?,
     val date: Calendar,
     val note: String?,
     val isPlanned: Boolean,
@@ -18,6 +18,4 @@ data class DayData(
     val day: Int,
     val transactions: List<Transaction>,
     val hasRecurring: Boolean
-) {
-
-}
+)

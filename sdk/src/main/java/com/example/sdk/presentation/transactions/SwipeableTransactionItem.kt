@@ -35,6 +35,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.sdk.domain.model.Category
+import com.example.sdk.presentation.statistics.formatSum
 import com.example.sdk.ui.theme.Gray100
 import com.example.sdk.ui.theme.Gray500
 import com.example.sdk.ui.theme.Gray900
@@ -46,10 +48,8 @@ import kotlin.math.roundToInt
 data class SwipeableTransaction(
     val id: Int,
     val name: String,
-    val amount: Int,
-    val category: String,
-    val icon: String,
-    val color: Long
+    val amount: Long,
+    val category: Category
 )
 
 @Composable
@@ -150,18 +150,17 @@ fun SwipeableTransactionItem(
                         modifier = Modifier
                             .size(48.dp)
                             .clip(RoundedCornerShape(16.dp))
-                            .background(Color(transaction.color).copy(alpha = 0.12f)),
+                            .background(Color(transaction.category.color).copy(alpha = 0.12f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = transaction.icon,
+                            text = transaction.category.icon,
                             fontSize = 24.sp
                         )
                     }
 
                     Spacer(modifier = Modifier.width(12.dp))
 
-                    // Название и категория
                     Column {
                         Text(
                             text = transaction.name,
@@ -170,22 +169,19 @@ fun SwipeableTransactionItem(
                             color = Gray900
                         )
                         Text(
-                            text = transaction.category,
+                            text = transaction.category.title,
                             fontSize = 14.sp,
                             color = Gray500
                         )
                     }
                 }
+                val isIncome = transaction.category.isIncome
 
-                // Сумма
                 Text(
-                    text = if (transaction.amount < 0)
-                        "- ${abs(transaction.amount)} ₽"
-                    else
-                        "+ ${transaction.amount} ₽",
+                    text = "${if (isIncome) "+" else "-"} ${transaction.amount.formatSum()} ₽",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
-                    color = if (transaction.amount < 0) Gray900 else GreenPrimary
+                    color = if (isIncome) GreenPrimary else Gray900
                 )
             }
         }

@@ -1,5 +1,6 @@
 package com.example.sdk.data.network.dto
 
+import com.example.sdk.domain.model.Category
 import com.example.sdk.domain.model.Transaction
 import com.google.gson.annotations.SerializedName
 import java.util.Calendar
@@ -9,7 +10,7 @@ data class TransactionDto(
     val id: String? = null,
     val amount: Long,
     val type: TransactionType,
-    val category: String,
+    val category: Int,
     @SerializedName("date_epoch_ms")
     val dateEpochMs: Long,
     val note: String? = null,
@@ -23,7 +24,7 @@ data class TransactionDto(
             id = id ?: UUID.randomUUID().toString(),
             amount = amount,
             type = type,
-            category = category,
+            category = Category.parse(category),
             date = Calendar.getInstance().apply { timeInMillis = dateEpochMs },
             note = note,
             isPlanned = isPlanned,

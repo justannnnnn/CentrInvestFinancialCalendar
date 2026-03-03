@@ -39,7 +39,7 @@ import java.text.SimpleDateFormat
 @Composable
 fun CalendarHeader(
     calendar: Calendar,
-    selectedViewMode: ViewModeTab,  // ← ДОБАВЛЕНО!
+    selectedViewMode: ViewModeTab,
     onPrevMonth: () -> Unit,
     onNextMonth: () -> Unit,
     onAddClick: () -> Unit

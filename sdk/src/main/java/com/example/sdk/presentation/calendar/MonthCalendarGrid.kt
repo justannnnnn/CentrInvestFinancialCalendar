@@ -59,6 +59,14 @@ fun MonthCalendarGrid(
     }
     val firstDayOffset = (firstDayOfMonth.get(Calendar.DAY_OF_WEEK) - Calendar.MONDAY + 7) % 7
 
+    val allTransactions = daysData.values
+        .flatMap { it.transactions }
+        .filter { it.amount != 0L }
+    val categoriesToSum = allTransactions
+        .mapNotNull { it.category?.let { cat -> cat to it.amount } }
+        .groupingBy { it.first }
+        .fold(0L) { acc, pair -> acc + pair.second }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -66,8 +74,6 @@ fun MonthCalendarGrid(
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        WeekDaysHeader()
-
         CalendarGrid(
             daysInMonth = daysInMonth,
             firstDayOffset = firstDayOffset,
@@ -76,7 +82,6 @@ fun MonthCalendarGrid(
             onDaySelected = onDaySelected
         )
 
-        val allTransactions = daysData.values.flatMap { it.transactions }
         StatsSummaryBlock(
             incomeSum = allTransactions.filter { it.type == TransactionType.INCOME }
                 .sumOf { it.amount },
@@ -84,36 +89,9 @@ fun MonthCalendarGrid(
                 .sumOf { it.amount }
         )
         Divider()
-
-
-        DonutChartWithStats()
-
-        Spacer(modifier = Modifier.height(16.dp))
-        StatsCategoryList()
-
-        Spacer(modifier = Modifier.height(24.dp))
-        AllTransactionsHeader()
-        Spacer(modifier = Modifier.height(8.dp))
-
-        TransactionsList()
-
-        Spacer(modifier = Modifier.height(32.dp))
-    }
-}
-
-@Composable
-private fun WeekDaysHeader() {
-    Row(modifier = Modifier.fillMaxWidth()) {
-        listOf("Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс").forEach { day ->
-            Text(
-                text = day,
-                modifier = Modifier.weight(1f),
-                textAlign = TextAlign.Center,
-                color = Gray500,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium
-            )
-        }
+        DonutChartWithStats(categoriesToSum = categoriesToSum)
+        StatsCategoryList(categoriesToSum = categoriesToSum)
+        TransactionsList(transactions = allTransactions)
     }
 }
 
@@ -125,6 +103,7 @@ private fun CalendarGrid(
     daysData: Map<Int, DayData>,
     onDaySelected: (Int) -> Unit
 ) {
+    WeekDaysHeader()
     LazyVerticalGrid(
         columns = GridCells.Fixed(7),
         verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -205,15 +184,29 @@ private fun DayCell(
     }
 }
 
+@Composable
+private fun WeekDaysHeader() {
+    Row(modifier = Modifier.fillMaxWidth()) {
+        listOf("Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс").forEach { day ->
+            Text(
+                text = day,
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center,
+                color = Gray500,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
+    }
+}
 
 @Composable
 private fun Divider() {
-    Spacer(modifier = Modifier.height(8.dp))
     Box(
         modifier = Modifier
+            .padding(top = 8.dp, bottom = 16.dp)
             .fillMaxWidth()
             .height(1.dp)
             .background(Gray100)
     )
-    Spacer(modifier = Modifier.height(16.dp))
 }
