@@ -36,7 +36,10 @@ import java.util.Calendar
 import java.util.Locale
 
 @Composable
-fun BottomSheetContent(selectedDay: Int?) {
+fun BottomSheetContent(
+    selectedDay: Int?,
+    onAddClick: () -> Unit
+) {
     val mockDate = Calendar.getInstance().apply {
         set(2025, Calendar.NOVEMBER, selectedDay ?: 14)
     }
@@ -63,7 +66,7 @@ fun BottomSheetContent(selectedDay: Int?) {
                     .size(40.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .background(GreenPrimary)
-                    .clickable { /* Добавить операцию */ },
+                    .clickable { onAddClick()  },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(

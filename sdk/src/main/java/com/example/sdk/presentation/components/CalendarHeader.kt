@@ -38,7 +38,8 @@ fun CalendarHeader(
     selectedViewMode: String,  // ← ДОБАВЛЕНО!
     onPrevMonth: () -> Unit,
     onNextMonth: () -> Unit,
-    onAddClick: () -> Unit
+    onAddClick: () -> Unit,
+    onPeriodClick: () -> Unit
 ) {
     val monthName = calendar.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale("ru", "RU"))
         ?.replaceFirstChar { it.uppercase() } ?: "Месяц"
@@ -75,7 +76,7 @@ fun CalendarHeader(
                         .clip(RoundedCornerShape(12.dp))
                         .background(Gray100)
                         .padding(horizontal = 14.dp, vertical = 2.dp)
-                        .clickable { /* PeriodSelector */ }
+                        .clickable { onPeriodClick() }
                 ) {
                     Text(
                         text = when (selectedViewMode) {

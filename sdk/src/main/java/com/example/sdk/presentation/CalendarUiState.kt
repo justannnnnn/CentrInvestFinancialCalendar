@@ -12,5 +12,9 @@ data class CalendarUiState(
     val selectedDate: LocalDate? = null,
     val viewModeTabs: List<ViewModeTab> =
         listOf(ViewModeTab.Month, ViewModeTab.Week, ViewModeTab.Day),
-    val selectedViewMode: ViewModeTab = ViewModeTab.Month
+    val selectedViewMode: ViewModeTab = ViewModeTab.Month,
+
+    //  период для статистики/фильтра
+    val periodStart: LocalDate = LocalDate.now().minusDays(30),
+    val periodEnd: LocalDate = LocalDate.now()
 )
