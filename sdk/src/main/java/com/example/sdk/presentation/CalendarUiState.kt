@@ -18,7 +18,7 @@ data class CalendarUiState(
     val showBottomSheet: Boolean = false
 ) {
     val allMonthTransactions: List<Transaction>
-        get() = daysData.values.flatMap { it.transactions }.filter { it.amount != 0L }
+        get() = daysData.values.flatMap { it.transactions }
 }
 
 sealed interface CalendarUiAction {

@@ -1,8 +1,6 @@
 package com.example.sdk.presentation
 
 import android.annotation.SuppressLint
-import android.content.Context
-import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -42,10 +40,9 @@ import com.example.sdk.ui.theme.Gray500
 import com.example.sdk.ui.theme.Gray900
 import com.example.sdk.ui.theme.GreenPrimary
 import com.example.sdk.ui.theme.White
-import java.text.SimpleDateFormat
+import com.example.sdk.utils.getDateFormat
+import com.example.sdk.utils.getQuantityStringRu
 import java.util.Calendar
-import java.util.Locale
-import kotlin.math.abs
 
 @SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
@@ -56,10 +53,6 @@ fun DayDetailedBottomSheet(
     onClickMenu: () -> Unit,
     onClickTransaction: () -> Unit
 ) {
-    val dateFormat = SimpleDateFormat("d MMMM, EEEE", Locale("ru"))
-    val formattedDate = dateFormat.format(selectedDay.time)
-        .replaceFirstChar { it.uppercase() }
-
     val scrollState = rememberScrollState()
 
     Column(
@@ -82,7 +75,7 @@ fun DayDetailedBottomSheet(
 
         Text(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            text = formattedDate,
+            text = getDateFormat(selectedDay.time),
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
             color = Gray900
@@ -249,7 +242,6 @@ private fun DayStats(
         Text(
             text = LocalContext.current.getQuantityStringRu(
                 R.plurals.number_of_operations,
-                transactionCount,
                 transactionCount
             ),
             fontSize = 14.sp,
@@ -264,13 +256,5 @@ private fun DayStats(
     }
 }
 
-fun Context.getQuantityStringRu(id: Int, quantity: Int, vararg formatArgs: Any): String {
-    return getContextRu().resources.getQuantityString(id, quantity, *formatArgs)
-}
 
-fun Context.getContextRu(): Context {
-    val configuration = Configuration(resources.configuration)
-    configuration.setLocale(Locale("ru", "RU"))
-    return createConfigurationContext(configuration)
-}
 

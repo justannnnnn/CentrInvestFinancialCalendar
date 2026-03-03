@@ -19,12 +19,14 @@ data class TransactionDto(
     @SerializedName("recurrence_json")
     val recurrenceRule: RecurrenceRuleDto? = null
 ) {
-    fun toDomain(): Transaction {
+    fun toDomain(): Transaction? {
+        val category = Category.parse(category)
+        if (amount == 0L || category == null) return null
         return Transaction(
             id = id ?: UUID.randomUUID().toString(),
             amount = amount,
             type = type,
-            category = Category.parse(category),
+            category = category,
             date = Calendar.getInstance().apply { timeInMillis = dateEpochMs },
             note = note,
             isPlanned = isPlanned,

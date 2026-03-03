@@ -63,7 +63,7 @@ fun MonthCalendarGrid(
         .flatMap { it.transactions }
         .filter { it.amount != 0L }
     val categoriesToSum = allTransactions
-        .mapNotNull { it.category?.let { cat -> cat to it.amount } }
+        .map { it.category to it.amount }
         .groupingBy { it.first }
         .fold(0L) { acc, pair -> acc + pair.second }
 

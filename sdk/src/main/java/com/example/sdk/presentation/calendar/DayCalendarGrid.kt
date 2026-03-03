@@ -17,6 +17,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,41 +33,33 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.layout
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.unit.Dp
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.sdk.R
 import com.example.sdk.domain.model.DayData
-import com.example.sdk.presentation.getQuantityStringRu
 import com.example.sdk.presentation.statistics.formatSum
-import com.example.sdk.presentation.transactions.SwipeableTransactionItem
 import com.example.sdk.presentation.transactions.SwipeableTransaction
+import com.example.sdk.presentation.transactions.SwipeableTransactionItem
 import com.example.sdk.ui.theme.Gray100
 import com.example.sdk.ui.theme.Gray300
 import com.example.sdk.ui.theme.Gray500
 import com.example.sdk.ui.theme.Gray900
 import com.example.sdk.ui.theme.GreenPrimary
 import com.example.sdk.ui.theme.White
-import java.text.SimpleDateFormat
+import com.example.sdk.utils.getDateFormat
+import com.example.sdk.utils.getQuantityStringRu
 import java.util.Calendar
-import java.util.Locale
 import kotlin.math.abs
 
 @Composable
 fun DayCalendarGrid(
     calendar: Calendar,
-    selectedDay: Int?,
     daysData: Map<Int, DayData>
 ) {
-    val dateFormat = SimpleDateFormat("d MMMM, EEEE", Locale("ru"))
-    val formattedDate = dateFormat.format(calendar.time)
-        .replaceFirstChar { it.uppercase() }
-
     val transactions = daysData[calendar.time.date]?.transactions.orEmpty()
     val income = transactions.filter { it.category?.isIncome == true }.sumOf { it.amount }
     val expense = transactions.filter { it.category?.isIncome == false }.sumOf { it.amount }
@@ -91,7 +85,7 @@ fun DayCalendarGrid(
                     .padding(vertical = 16.dp)
             ) {
                 Text(
-                    text = formattedDate,
+                    text = getDateFormat(calendar.time),
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
                     color = Gray900
@@ -99,7 +93,6 @@ fun DayCalendarGrid(
                 Text(
                     text = LocalContext.current.getQuantityStringRu(
                         R.plurals.number_of_operations,
-                        transactions.size,
                         transactions.size
                     ),
                     fontSize = 14.sp,
@@ -509,7 +502,6 @@ private fun SimpleTransactionItem(
             }
         }
 
-        // Сумма
         Text(
             text = if (transaction.amount < 0)
                 "- ${abs(transaction.amount)} ₽"
@@ -521,7 +513,6 @@ private fun SimpleTransactionItem(
         )
     }
 
-    // Разделитель
     Box(
         modifier = Modifier
             .fillMaxWidth()

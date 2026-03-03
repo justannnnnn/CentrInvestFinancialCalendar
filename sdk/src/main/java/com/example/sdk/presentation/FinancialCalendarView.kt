@@ -117,7 +117,6 @@ fun FinancialCalendarView(
 
                 ViewModeTab.Day -> DayCalendarGrid(
                     calendar = uiState.selectedPeriod,
-                    selectedDay = uiState.selectedDate?.time?.date,
                     daysData = uiState.daysData
                 )
             }

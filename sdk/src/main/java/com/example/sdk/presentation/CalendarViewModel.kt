@@ -31,10 +31,10 @@ class CalendarViewModel @Inject constructor(
 
     private var domainTransactions: List<Transaction> = emptyList()
 
-    fun loadStartData() {
+    private fun loadStartData() {
         viewModelScope.launch {
             val data = repo.getAll()
-            domainTransactions = data.map { it.toDomain() }
+            domainTransactions = data.mapNotNull { it.toDomain() }
             rebuildMonth()
         }
     }

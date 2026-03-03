@@ -7,7 +7,7 @@ data class Transaction(
     val id: String,
     val amount: Long,
     val type: TransactionType,
-    val category: Category?,
+    val category: Category,
     val date: Calendar,
     val note: String?,
     val isPlanned: Boolean,
