@@ -7,14 +7,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
@@ -23,7 +21,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -35,7 +33,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.sdk.ui.theme.Gray100
 import com.example.sdk.ui.theme.Gray500
 import com.example.sdk.ui.theme.Gray900
 import com.example.sdk.ui.theme.GreenPrimary
@@ -58,67 +55,118 @@ fun SwipeableTransactionItem(
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
-    var offsetX by remember { mutableStateOf(0f) }
-    val swipeThreshold = 60f
-    val maxOffset = 80f
+    var offsetX by remember { mutableFloatStateOf(0f) }
+
+    val swipeThreshold = 72f
+    val maxOffset = 96f
+    val cardShape = RoundedCornerShape(16.dp)
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(72.dp)
+            .height(76.dp)
+            .clip(cardShape)
+            .background(Color(0xFFF7F7F8))
     ) {
-        // Кнопка редактирования (слева)
+        // Фон действий
+        Row(
+            modifier = Modifier
+                .matchParentSize()
+        ) {
+            // Левая зона (редактировать)
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .background(Color(0xFFFFF3E0)),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                Row(
+                    modifier = Modifier.padding(start = 18.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Редактировать",
+                        tint = Color(0xFFE69500),
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        text = "Изменить",
+                        color = Color(0xFFE69500),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
+            // Правая зона (удалить)
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .background(Color(0xFFFFECEB)),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                Row(
+                    modifier = Modifier.padding(end = 18.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = "Удалить",
+                        color = Color(0xFFF95E5A),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Удалить",
+                        tint = Color(0xFFF95E5A),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+        }
+
+        // Нажимаемые action-зоны
         Box(
             modifier = Modifier
                 .align(Alignment.CenterStart)
                 .fillMaxHeight()
-                .width(80.dp)
-                .background(Color(0xFFFFB020))
-                .clickable {
+                .padding(start = 8.dp)
+                .size(width = 88.dp, height = 60.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .clickable(enabled = offsetX >= maxOffset * 0.9f) {
                     offsetX = 0f
                     onEdit()
-                },
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.Edit,
-                contentDescription = "Редактировать",
-                tint = White,
-                modifier = Modifier.size(24.dp)
-            )
-        }
+                }
+        )
 
-        // Кнопка удаления (справа)
         Box(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
                 .fillMaxHeight()
-                .width(80.dp)
-                .background(Color(0xFFF95E5A))
-                .clickable {
+                .padding(end = 8.dp)
+                .size(width = 88.dp, height = 60.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .clickable(enabled = offsetX <= -maxOffset * 0.9f) {
                     offsetX = 0f
                     onDelete()
-                },
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.Delete,
-                contentDescription = "Удалить",
-                tint = White,
-                modifier = Modifier.size(24.dp)
-            )
-        }
+                }
+        )
 
-        // Контент операции (свайпаемый)
+        // Белая карточка поверх
         Box(
             modifier = Modifier
                 .offset { IntOffset(offsetX.roundToInt(), 0) }
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
+                .height(76.dp)
+                .clip(cardShape)
                 .background(White)
                 .pointerInput(Unit) {
                     detectHorizontalDragGestures(
-                        onDragStart = { offsetX = 0f },
                         onDragEnd = {
                             offsetX = when {
                                 offsetX > swipeThreshold -> maxOffset
@@ -137,7 +185,7 @@ fun SwipeableTransactionItem(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { /* Открыть детали */ }
-                    .padding(vertical = 12.dp, horizontal = 16.dp),
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
@@ -145,7 +193,6 @@ fun SwipeableTransactionItem(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.weight(1f)
                 ) {
-                    // Иконка категории
                     Box(
                         modifier = Modifier
                             .size(48.dp)
@@ -159,9 +206,10 @@ fun SwipeableTransactionItem(
                         )
                     }
 
-                    Spacer(modifier = Modifier.width(12.dp))
+                    androidx.compose.foundation.layout.Spacer(
+                        modifier = Modifier.size(12.dp)
+                    )
 
-                    // Название и категория
                     Column {
                         Text(
                             text = transaction.name,
@@ -177,12 +225,12 @@ fun SwipeableTransactionItem(
                     }
                 }
 
-                // Сумма
                 Text(
-                    text = if (transaction.amount < 0)
+                    text = if (transaction.amount < 0) {
                         "- ${abs(transaction.amount)} ₽"
-                    else
-                        "+ ${transaction.amount} ₽",
+                    } else {
+                        "+ ${transaction.amount} ₽"
+                    },
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
                     color = if (transaction.amount < 0) Gray900 else GreenPrimary

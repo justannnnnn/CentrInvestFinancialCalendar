@@ -47,7 +47,7 @@ fun FinancialCalendarView(
     LaunchedEffect(Unit) {
         context.findActivity()?.window?.let { window ->
             val insetsController = WindowCompat.getInsetsController(window, window.decorView)
-            insetsController.isAppearanceLightStatusBars = false
+            insetsController.isAppearanceLightStatusBars = true
             window.statusBarColor = android.graphics.Color.TRANSPARENT
         }
     }
@@ -135,7 +135,11 @@ fun FinancialCalendarView(
                 ),
                 containerColor = White,
             ) {
-                BottomSheetContent(selectedDay = uiState.selectedDate?.dayOfMonth)
+                BottomSheetContent(
+                    selectedDay = uiState.selectedDate?.dayOfMonth,
+                    selectedMonth = uiState.selectedMonth,
+                    transactions = uiState.allMonthTransactions // передаем транзакции
+                )
             }
         }
     }

@@ -31,14 +31,60 @@ import com.example.sdk.ui.theme.Gray500
 import com.example.sdk.ui.theme.Gray900
 import com.example.sdk.ui.theme.GreenPrimary
 import com.example.sdk.ui.theme.White
+import com.example.sdk.presentation.models.MockTransactions
+import com.example.sdk.presentation.models.Transaction as MockTransaction
+import com.example.sdk.domain.model.Transaction as DomainTransaction
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import kotlin.math.abs
 
 @Composable
-fun BottomSheetContent(selectedDay: Int?) {
+fun BottomSheetContent(
+    selectedDay: Int?,
+    selectedMonth: Calendar = Calendar.getInstance(),
+    transactions: List<DomainTransaction> = emptyList()
+) {
+    val day = selectedDay ?: 14
+
+    // Получаем доменные транзакции
+    val domainDayTransactions = if (transactions.isNotEmpty()) {
+        transactions.filter { tx ->
+            val txCal = tx.date.clone() as Calendar
+            txCal.get(Calendar.YEAR) == selectedMonth.get(Calendar.YEAR) &&
+                    txCal.get(Calendar.MONTH) == selectedMonth.get(Calendar.MONTH) &&
+                    txCal.get(Calendar.DAY_OF_MONTH) == day
+        }
+    } else {
+        emptyList()
+    }
+
+    // Получаем моковые транзакции
+    val mockDayTransactions = if (transactions.isEmpty()) {
+        MockTransactions.list.filter { tx ->
+            tx.date.get(Calendar.DAY_OF_MONTH) == day
+        }
+    } else {
+        emptyList()
+    }
+
+    // Используем доменные, если есть, иначе моковые
+    val displayTransactions = if (domainDayTransactions.isNotEmpty()) {
+        domainDayTransactions
+    } else {
+        mockDayTransactions
+    }
+
+    val totalAmount = if (displayTransactions.isNotEmpty()) {
+        if (displayTransactions.first() is DomainTransaction) {
+            (displayTransactions as List<DomainTransaction>).sumOf { it.amount }.toInt()
+        } else {
+            (displayTransactions as List<MockTransaction>).sumOf { it.amount }.toInt()
+        }
+    } else 0
+
     val mockDate = Calendar.getInstance().apply {
-        set(2025, Calendar.NOVEMBER, selectedDay ?: 14)
+        set(2025, Calendar.NOVEMBER, day)
     }
     val dateFormat = SimpleDateFormat("d MMMM, EEEE", Locale("ru"))
     val formattedDate = dateFormat.format(mockDate.time)
@@ -49,15 +95,14 @@ fun BottomSheetContent(selectedDay: Int?) {
             .fillMaxWidth()
             .background(White)
     ) {
-        // Верхняя панель с плюсиком и троеточием
+        // Верхняя панель с плюсиком
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Плюсик слева
             Box(
                 modifier = Modifier
                     .size(40.dp)
@@ -70,23 +115,6 @@ fun BottomSheetContent(selectedDay: Int?) {
                     imageVector = Icons.Default.Add,
                     contentDescription = "Добавить",
                     tint = White,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
-            // Троеточие справа
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Gray100)
-                    .clickable { /* Меню */ },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.MoreVert,
-                    contentDescription = "Меню",
-                    tint = Gray900,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -110,44 +138,58 @@ fun BottomSheetContent(selectedDay: Int?) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "3 операции",
+                text = "${displayTransactions.size} ${getOperationWord(displayTransactions.size)}",
                 fontSize = 14.sp,
                 color = Gray500
             )
             Text(
-                text = "-2060 ₽",
+                text = if (totalAmount < 0) "-${abs(totalAmount)} ₽" else "+$totalAmount ₽",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFFF95E5A)
+                color = if (totalAmount < 0) Color(0xFFF95E5A) else GreenPrimary
             )
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
         // Список операций
-        TransactionItem(
-            icon = "☕",
-            name = "Покупка кофе",
-            category = "Покупки",
-            amount = -230,
-            color = 0xFFFFA500
-        )
-
-        TransactionItem(
-            icon = "🛒",
-            name = "Продукты",
-            category = "Продукты",
-            amount = -1450,
-            color = 0xFFFFA500
-        )
-
-        TransactionItem(
-            icon = "🚕",
-            name = "Такси",
-            category = "Транспорт",
-            amount = -380,
-            color = 0xFF1E90FF
-        )
+        if (displayTransactions.isNotEmpty()) {
+            if (displayTransactions.first() is DomainTransaction) {
+                // Показываем доменные транзакции
+                (displayTransactions as List<DomainTransaction>).forEach { tx ->
+                    TransactionItem(
+                        icon = getEmojiForCategory(tx.category),
+                        name = tx.note ?: tx.category,
+                        category = tx.category,
+                        amount = tx.amount.toInt(),
+                        color = when (tx.category) {
+                            "Продукты" -> 0xFFFFA500
+                            "Транспорт" -> 0xFF1E90FF
+                            "Кафе" -> 0xFFFFA500
+                            "Зарплата" -> 0xFF00A86B
+                            else -> 0xFF808080
+                        }
+                    )
+                }
+            } else {
+                // Показываем моковые транзакции
+                (displayTransactions as List<MockTransaction>).forEach { tx ->
+                    TransactionItem(
+                        icon = tx.categoryEmoji,
+                        name = tx.title,
+                        category = tx.category,
+                        amount = tx.amount.toInt(),
+                        color = when (tx.category) {
+                            "Продукты" -> 0xFFFFA500
+                            "Транспорт" -> 0xFF1E90FF
+                            "Кафе" -> 0xFFFFA500
+                            "Зарплата" -> 0xFF00A86B
+                            else -> 0xFF808080
+                        }
+                    )
+                }
+            }
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
     }
@@ -209,7 +251,7 @@ private fun TransactionItem(
 
         // Сумма
         Text(
-            text = if (amount < 0) "- ${kotlin.math.abs(amount)} ₽" else "+ $amount ₽",
+            text = if (amount < 0) "- ${abs(amount)} ₽" else "+ $amount ₽",
             fontSize = 16.sp,
             fontWeight = FontWeight.Medium,
             color = if (amount < 0) Gray900 else GreenPrimary
@@ -223,4 +265,26 @@ private fun TransactionItem(
             .height(1.dp)
             .background(Gray100)
     )
+}
+
+// для склонения слова "операция"
+private fun getOperationWord(count: Int): String {
+    return when {
+        count == 1 -> "операция"
+        count in 2..4 -> "операции"
+        else -> "операций"
+    }
+}
+
+private fun getEmojiForCategory(category: String): String {
+    return when (category.lowercase()) {
+        "продукты" -> "🛒"
+        "транспорт" -> "🚕"
+        "кафе" -> "☕"
+        "зарплата" -> "💰"
+        "жильё" -> "🏠"
+        "подписки" -> "🎬"
+        "развлечения" -> "🎥"
+        else -> "💳"
+    }
 }

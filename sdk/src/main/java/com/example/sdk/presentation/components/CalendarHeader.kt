@@ -3,6 +3,7 @@ package com.example.sdk.presentation.components
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -39,7 +40,7 @@ import java.text.SimpleDateFormat
 @Composable
 fun CalendarHeader(
     calendar: Calendar,
-    selectedViewMode: ViewModeTab,  // ← ДОБАВЛЕНО!
+    selectedViewMode: ViewModeTab,  // ← теперь это объект, а не строка!
     onPrevMonth: () -> Unit,
     onNextMonth: () -> Unit,
     onAddClick: () -> Unit
@@ -48,7 +49,8 @@ fun CalendarHeader(
         modifier = Modifier
             .fillMaxWidth()
             .background(White)
-            .padding(top = 16.dp, start = 16.dp, end = 16.dp, bottom = 12.dp)
+            .statusBarsPadding()
+            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 12.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,

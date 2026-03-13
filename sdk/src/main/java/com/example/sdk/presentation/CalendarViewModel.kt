@@ -19,6 +19,8 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -42,8 +44,16 @@ class CalendarViewModel @Inject constructor(
 
     fun loadStartData() {
         viewModelScope.launch {
-            val data = repo.getAll()
-            domainTransactions = data.map { it.toDomain() }
+            try {
+                val data = withContext(Dispatchers.IO) {
+                    repo.getAll()
+                }
+                domainTransactions = data.map { it.toDomain() }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                domainTransactions = emptyList()
+            }
+
             rebuildMonth()
         }
     }
@@ -169,6 +179,19 @@ class CalendarViewModel @Inject constructor(
                     _sideEffect.emit(CalendarSideEffect.OpenAddScreen)
                 }
             }
+        }
+    }
+
+    // для получения операций за день
+    fun getTransactionsForDay(day: Int, month: Calendar, transactions: List<Transaction>): List<Transaction> {
+        val year = month.get(Calendar.YEAR)
+        val monthValue = month.get(Calendar.MONTH)
+
+        return transactions.filter { tx ->
+            val txCal = tx.date.clone() as Calendar
+            txCal.get(Calendar.YEAR) == year &&
+                    txCal.get(Calendar.MONTH) == monthValue &&
+                    txCal.get(Calendar.DAY_OF_MONTH) == day
         }
     }
 }
