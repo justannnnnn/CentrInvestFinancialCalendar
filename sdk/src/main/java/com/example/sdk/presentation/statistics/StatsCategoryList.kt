@@ -1,5 +1,6 @@
 package com.example.sdk.presentation.statistics
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,88 +22,81 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.sdk.domain.model.Category
 import com.example.sdk.ui.theme.Gray500
 import com.example.sdk.ui.theme.Gray900
 import com.example.sdk.ui.theme.GreenPrimary
 
+@SuppressLint("DefaultLocale")
 @Composable
-fun StatsCategoryList() {
-    val categories = listOf(
-        CategoryItem("💼", "Работа", 80_000, true, 0xFF00A86B),
-        CategoryItem("🏠", "Дом и быт", 15_000, false, 0xFF32CD32),
-        CategoryItem("🛒", "Продукты", 4_650, false, 0xFFFFA500),
-        CategoryItem("💳", "Покупки", 2_570, false, 0xFFF95E5A),
-        CategoryItem("🚕", "Транспорт", 900, false, 0xFF1E90FF),
-        CategoryItem("🏥", "Здоровье", 850, false, 0xFF8A2BE2),
-        CategoryItem("🎬", "Развлечения", 600, false, 0xFFFFB800)
-    )
-
-    val totalExpenses = categories.filter { !it.isIncome }.sumOf { it.amount }.toFloat()
+fun StatsCategoryList(categoriesToSum: Map<Category, Long>) {
+    val totalExpenses = categoriesToSum.filter { it.key.isIncome.not() }.values.sum()
 
     Column(
         modifier = Modifier
+            .padding(top = 16.dp)
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
     ) {
-        categories.forEach { category ->
-            val percentage = if (category.isIncome) 0f else
-                (category.amount / totalExpenses * 100).toInt().toFloat()
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    // Иконка
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color(category.color).copy(alpha = 0.12f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = category.icon,
-                            fontSize = 20.sp
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    // Название и сумма
-                    Column {
-                        Text(
-                            text = category.name,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Gray900
-                        )
-                        if (!category.isIncome) {
-                            Text(
-                                text = "${percentage.toInt()}%",
-                                fontSize = 12.sp,
-                                color = Gray500
-                            )
-                        }
-                    }
+        categoriesToSum.entries.sortedByDescending { it.value }
+            .forEach { (category, sum) ->
+                val percentage = if (category.isIncome) {
+                    0f
+                } else {
+                    (sum.toFloat() / totalExpenses.toFloat() * 100)
                 }
 
-                // Сумма
-                Text(
-                    text = "${if (!category.isIncome) "- " else ""}${category.amount} ₽",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = if (category.isIncome) GreenPrimary else Gray900
-                )
-            }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(category.color).copy(alpha = 0.12f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = category.icon,
+                                fontSize = 20.sp
+                            )
+                        }
 
-            if (categories.last() != category) {
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Column {
+                            Text(
+                                text = category.title,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Gray900
+                            )
+                            if (category.isIncome.not()) {
+                                Text(
+                                    text = String.format("%.1f%%", percentage),
+                                    fontSize = 12.sp,
+                                    color = Gray500
+                                )
+                            }
+                        }
+                    }
+
+                    Text(
+                        text = "${if (!category.isIncome) "- " else ""}${sum.formatSum()} ₽",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = if (category.isIncome) GreenPrimary else Gray900
+                    )
+                }
+
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -110,6 +104,5 @@ fun StatsCategoryList() {
                         .background(Gray500.copy(alpha = 0.2f))
                 )
             }
-        }
     }
 }

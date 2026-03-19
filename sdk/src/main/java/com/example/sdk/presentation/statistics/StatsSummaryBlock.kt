@@ -30,14 +30,9 @@ fun StatsSummaryBlock(
     incomeSum: Long,
     expenseSum: Long
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            //.padding(top = 6.dp)
-    ) {
+    Column(modifier = Modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             StatsCard(
