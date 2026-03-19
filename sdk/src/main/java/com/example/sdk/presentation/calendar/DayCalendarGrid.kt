@@ -11,34 +11,22 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.Icon
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.unit.Dp
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import com.example.sdk.presentation.transactions.SwipeableTransactionItem
-import com.example.sdk.presentation.transactions.SwipeableTransaction
+import com.example.sdk.domain.model.Transaction
 import com.example.sdk.ui.theme.Gray100
 import com.example.sdk.ui.theme.Gray300
 import com.example.sdk.ui.theme.Gray500
@@ -54,34 +42,35 @@ import kotlin.math.abs
 fun DayCalendarGrid(
     calendar: Calendar,
     selectedDay: Int?,
-    onDaySelected: (Int) -> Unit,
-    dayHasOperations: (Int) -> Boolean,
-    dayHasRecurring: (Int) -> Boolean
+    transactions: List<Transaction>,
+    onDaySelected: (Int) -> Unit
 ) {
     val currentDay = selectedDay ?: calendar.get(Calendar.DAY_OF_MONTH)
-    val mockDate = Calendar.getInstance().apply {
-        set(2025, Calendar.NOVEMBER, currentDay)
+
+    val selectedDateCalendar = (calendar.clone() as Calendar).apply {
+        set(Calendar.DAY_OF_MONTH, currentDay)
     }
 
     val dateFormat = SimpleDateFormat("d MMMM, EEEE", Locale("ru"))
-    val formattedDate = dateFormat.format(mockDate.time)
+    val formattedDate = dateFormat.format(selectedDateCalendar.time)
         .replaceFirstChar { it.uppercase() }
 
-    // Моковые данные для демонстрации
-    val transactions = listOf(
-        DayTransaction("Покупка кофе", -230, "Покупки", "☕", 0xFFFFA500),
-        DayTransaction("Продукты", -1450, "Продукты", "🛒", 0xFFFFA500),
-        DayTransaction("Такси", -380, "Транспорт", "🚕", 0xFF1E90FF)
-    )
+    val income = transactions
+        .filter { it.amount > 0 }
+        .sumOf { it.amount.toDouble() }
 
-    val income = transactions.filter { it.amount > 0 }.sumOf { it.amount }
-    val expense = transactions.filter { it.amount < 0 }.sumOf { it.amount }
-
-    // Топ категории по расходам
-    val categoryMap = transactions
+    val expenseAbs = transactions
         .filter { it.amount < 0 }
-        .groupBy { it.category }
-        .mapValues { (_, list) -> list.sumOf { it.amount } }
+        .sumOf { abs(it.amount.toDouble()) }
+
+    val categoryMap: List<Pair<String, Double>> = transactions
+        .filter { it.amount < 0 }
+        .groupBy { transaction ->
+            transaction.category.toString()
+        }
+        .mapValues { (_, list) ->
+            list.sumOf { abs(it.amount.toDouble()) }
+        }
         .toList()
         .sortedByDescending { (_, amount) -> amount }
         .take(3)
@@ -92,7 +81,6 @@ fun DayCalendarGrid(
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Заголовок с датой
         item {
             Column(
                 modifier = Modifier
@@ -105,6 +93,7 @@ fun DayCalendarGrid(
                     fontWeight = FontWeight.Bold,
                     color = Gray900
                 )
+
                 Text(
                     text = "${transactions.size} ${getOperationWord(transactions.size)}",
                     fontSize = 14.sp,
@@ -114,13 +103,11 @@ fun DayCalendarGrid(
             }
         }
 
-        // Карточки доходов и расходов (градиентные)
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Доходы
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -144,7 +131,7 @@ fun DayCalendarGrid(
                             color = White.copy(alpha = 0.8f)
                         )
                         Text(
-                            text = "+${abs(income)} ₽",
+                            text = "+${formatAmount(income)} ₽",
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
                             color = White
@@ -152,7 +139,6 @@ fun DayCalendarGrid(
                     }
                 }
 
-                // Расходы
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -176,7 +162,7 @@ fun DayCalendarGrid(
                             color = White.copy(alpha = 0.8f)
                         )
                         Text(
-                            text = "-${abs(expense)} ₽",
+                            text = "-${formatAmount(expenseAbs)} ₽",
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
                             color = White
@@ -186,8 +172,7 @@ fun DayCalendarGrid(
             }
         }
 
-        // Топ категорий (зеленая заливка уже есть!)
-        if (categoryMap.isNotEmpty()) {
+        if (categoryMap.isNotEmpty() && expenseAbs > 0.0) {
             item {
                 Text(
                     text = "Топ категорий",
@@ -199,13 +184,13 @@ fun DayCalendarGrid(
             }
 
             items(categoryMap) { (category, amount) ->
-                val percentage = (amount / abs(expense)) * 100
+                val percentage = ((amount / expenseAbs) * 100.0).toFloat().coerceIn(0f, 100f)
                 val categoryInfo = getCategoryInfo(category)
 
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { /* Открыть категорию */ },
+                        .clickable { onDaySelected(currentDay) },
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = Gray100
@@ -236,8 +221,9 @@ fun DayCalendarGrid(
                                     color = Gray900
                                 )
                             }
+
                             Text(
-                                text = "${abs(amount)} ₽",
+                                text = "${formatAmount(amount)} ₽",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = Gray900
@@ -246,29 +232,26 @@ fun DayCalendarGrid(
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        // Зеленая заливка - РАБОТАЕТ!
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(6.dp)
                                 .clip(RoundedCornerShape(3.dp))
-                                .background(Gray300) // Серый фон
+                                .background(Gray300)
                         ) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth(percentage / 100f)
                                     .height(6.dp)
                                     .clip(RoundedCornerShape(3.dp))
-                                    .background(GreenPrimary) // Зеленая заливка!
+                                    .background(GreenPrimary)
                             )
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(8.dp))
             }
         }
 
-        // Все операции
         item {
             Text(
                 text = "Все операции",
@@ -279,165 +262,120 @@ fun DayCalendarGrid(
             )
         }
 
-        items(transactions) { transaction ->
-            SwipeableTransactionItem(
-                transaction = SwipeableTransaction(
-                    id = transaction.hashCode(),
-                    name = transaction.name,
-                    amount = transaction.amount,
-                    category = transaction.category,
-                    icon = transaction.icon,
-                    color = transaction.color
-                ),
-                onEdit = { /* Редактировать */ },
-                onDelete = { /* Удалить */ }
-            )
-            Spacer(modifier = Modifier.height(8.dp))
+        if (transactions.isEmpty()) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Gray100)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "На этот день операций нет",
+                            fontSize = 14.sp,
+                            color = Gray500
+                        )
+                    }
+                }
+            }
+        } else {
+            items(transactions) { transaction ->
+                SimpleTransactionItem(transaction = transaction)
+            }
+        }
+
+        item {
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
 
 @Composable
-private fun DayTransactionItem(
-    transaction: DayTransaction
+private fun SimpleTransactionItem(
+    transaction: Transaction
 ) {
-    var showMenu by remember { mutableStateOf(false) }
+    val categoryName = transaction.category.toString()
+    val categoryInfo = getCategoryInfo(categoryName)
+    val isExpense = transaction.amount < 0
 
-    Box(
-        modifier = Modifier.fillMaxWidth()
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = White)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { showMenu = !showMenu }
-                .padding(vertical = 12.dp),
+                .padding(horizontal = 14.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // Иконка категории
                 Box(
                     modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(Color(transaction.color).copy(alpha = 0.12f)),
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Gray100),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = transaction.icon,
-                        fontSize = 24.sp
+                        text = categoryInfo.icon,
+                        fontSize = 20.sp
                     )
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
-
-                // Название и категория
-                Column {
+                Column(
+                    modifier = Modifier.padding(start = 12.dp)
+                ) {
                     Text(
-                        text = transaction.name,
+                        text = transaction.note ?: categoryInfo.name,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium,
                         color = Gray900
                     )
+
                     Text(
-                        text = transaction.category,
-                        fontSize = 14.sp,
+                        text = categoryInfo.name,
+                        fontSize = 13.sp,
                         color = Gray500
                     )
                 }
             }
 
-            // Сумма и меню
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = if (transaction.amount < 0)
-                        "- ${abs(transaction.amount)} ₽"
-                    else
-                        "+ ${transaction.amount} ₽",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = if (transaction.amount < 0) Gray900 else GreenPrimary
-                )
-
-                Icon(
-                    imageVector = Icons.Default.MoreVert,
-                    contentDescription = "Меню",
-                    tint = Gray500,
-                    modifier = Modifier
-                        .size(20.dp)
-                        .clickable { showMenu = !showMenu }
-                        .padding(4.dp)
-                )
-            }
-        }
-
-        // Меню редактирования/удаления
-        if (showMenu) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .offset(y = 40.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(White)
-                    .shadow(4.dp)
-                    .width(160.dp)
-            ) {
-                Column {
-                    Text(
-                        text = "✏️ Редактировать",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { /* Редактировать */ }
-                            .padding(12.dp),
-                        fontSize = 14.sp,
-                        color = Gray900
-                    )
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(1.dp)
-                            .background(Gray100)
-                    )
-                    Text(
-                        text = "🗑️ Удалить",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { /* Удалить */ }
-                            .padding(12.dp),
-                        fontSize = 14.sp,
-                        color = Color(0xFFF95E5A)
-                    )
-                }
-            }
+            Text(
+                text = if (isExpense) {
+                    "- ${formatAmount(abs(transaction.amount.toDouble()))} ₽"
+                } else {
+                    "+ ${formatAmount(transaction.amount.toDouble())} ₽"
+                },
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = if (isExpense) Gray900 else GreenPrimary
+            )
         }
     }
-
-    // Разделитель
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(1.dp)
-            .background(Gray100)
-    )
 }
 
-private data class DayTransaction(
-    val name: String,
-    val amount: Int,
-    val category: String,
-    val icon: String,
-    val color: Long
-)
+private fun formatAmount(value: Double): String {
+    return if (value % 1.0 == 0.0) {
+        value.toInt().toString()
+    } else {
+        String.format(Locale("ru"), "%.2f", value)
+    }
+}
 
 private fun getOperationWord(count: Int): String {
     return when {
-        count == 1 -> "операция"
-        count in 2..4 -> "операции"
+        count % 10 == 1 && count % 100 != 11 -> "операция"
+        count % 10 in 2..4 && count % 100 !in 12..14 -> "операции"
         else -> "операций"
     }
 }
@@ -447,6 +385,10 @@ private fun getCategoryInfo(category: String): CategoryInfo {
         "продукты" -> CategoryInfo("🛒", "Продукты")
         "транспорт" -> CategoryInfo("🚕", "Транспорт")
         "покупки" -> CategoryInfo("💳", "Покупки")
+        "развлечения" -> CategoryInfo("🎉", "Развлечения")
+        "кафе", "рестораны", "еда" -> CategoryInfo("🍽️", "Еда")
+        "здоровье" -> CategoryInfo("💊", "Здоровье")
+        "подписки" -> CategoryInfo("🔁", "Подписки")
         else -> CategoryInfo("📦", category)
     }
 }
@@ -455,83 +397,3 @@ private data class CategoryInfo(
     val icon: String,
     val name: String
 )
-
-// Вспомогательный модификатор для смещения
-private fun Modifier.offset(y: Dp): Modifier = this.then(
-    Modifier.layout { measurable, constraints ->
-        val placeable = measurable.measure(constraints)
-        val yPx = y.roundToPx()
-        layout(placeable.width, placeable.height) {
-            placeable.placeRelative(0, yPx)
-        }
-    }
-)
-
-@Composable
-private fun SimpleTransactionItem(
-    transaction: DayTransaction
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { /* Открыть детали */ }
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.weight(1f)
-        ) {
-            // Иконка
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color(transaction.color).copy(alpha = 0.1f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = transaction.icon,
-                    fontSize = 20.sp
-                )
-            }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            // Название
-            Column {
-                Text(
-                    text = transaction.name,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Gray900
-                )
-                Text(
-                    text = transaction.category,
-                    fontSize = 12.sp,
-                    color = Gray500
-                )
-            }
-        }
-
-        // Сумма
-        Text(
-            text = if (transaction.amount < 0)
-                "- ${abs(transaction.amount)} ₽"
-            else
-                "+ ${transaction.amount} ₽",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Medium,
-            color = if (transaction.amount < 0) Gray900 else GreenPrimary
-        )
-    }
-
-    // Разделитель
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(1.dp)
-            .background(Gray100)
-    )
-}
