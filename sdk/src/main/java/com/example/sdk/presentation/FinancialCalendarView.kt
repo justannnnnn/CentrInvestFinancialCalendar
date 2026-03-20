@@ -45,7 +45,6 @@ import com.example.sdk.presentation.calendar.MonthCalendarGrid
 import com.example.sdk.presentation.calendar.WeekCalendarGrid
 import com.example.sdk.presentation.components.CalendarHeader
 import com.example.sdk.presentation.components.ViewModeTabs
-import com.example.sdk.presentation.DayDetailedBottomSheet
 import com.example.sdk.presentation.models.ViewModeTab
 import com.example.sdk.ui.theme.Gray100
 import com.example.sdk.ui.theme.White
@@ -73,6 +72,7 @@ fun FinancialCalendarView(
         context.findActivity()?.window?.let { window ->
             val controller = WindowCompat.getInsetsController(window, window.decorView)
             controller.isAppearanceLightStatusBars = true
+            WindowCompat.setDecorFitsSystemWindows(window, false)
             window.statusBarColor = android.graphics.Color.TRANSPARENT
         }
     }

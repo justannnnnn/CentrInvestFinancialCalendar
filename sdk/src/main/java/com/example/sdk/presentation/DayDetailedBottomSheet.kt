@@ -79,7 +79,7 @@ fun DayDetailedBottomSheet(
         DayStats(
             transactionCount = dayTransactions.size,
             dayBalance = dayTransactions.sumOf {
-                if (it.category?.isIncome == true) it.amount else -it.amount
+                if (it.category.isIncome == true) it.amount else -it.amount
             }
         )
 
