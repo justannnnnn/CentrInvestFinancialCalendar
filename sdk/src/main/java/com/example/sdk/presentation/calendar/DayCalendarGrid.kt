@@ -58,15 +58,15 @@ fun DayCalendarGrid(
     dayHasOperations: (Int) -> Boolean,
     dayHasRecurring: (Int) -> Boolean
 ) {
-    val currentDay = selectedDay ?: calendar.get(Calendar.DAY_OF_MONTH)
-    val mockDate = Calendar.getInstance().apply {
-        set(2025, Calendar.NOVEMBER, currentDay)
+    val selectedDateCal = (calendar.clone() as Calendar).apply {
+        if (selectedDay != null) {
+            set(Calendar.DAY_OF_MONTH, selectedDay)
+        }
     }
 
     val dateFormat = SimpleDateFormat("d MMMM, EEEE", Locale("ru"))
-    val formattedDate = dateFormat.format(mockDate.time)
+    val formattedDate = dateFormat.format(selectedDateCal.time)
         .replaceFirstChar { it.uppercase() }
-
     // Моковые данные для демонстрации
     val transactions = listOf(
         DayTransaction("Покупка кофе", -230, "Покупки", "☕", 0xFFFFA500),

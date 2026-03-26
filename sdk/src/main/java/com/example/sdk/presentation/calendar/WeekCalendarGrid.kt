@@ -191,11 +191,18 @@ private fun getWeekDays(calendar: Calendar): List<WeekDayItem> {
     val weekDays = mutableListOf<WeekDayItem>()
     val daysOfWeek = listOf("Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс")
 
-    val calendarCopy = calendar.clone() as Calendar
-    calendarCopy.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+    val startOfWeek = calendar.clone() as Calendar
+    startOfWeek.firstDayOfWeek = Calendar.MONDAY
+
+    val currentDayOfWeek = startOfWeek.get(Calendar.DAY_OF_WEEK)
+    val offsetToMonday = when (currentDayOfWeek) {
+        Calendar.SUNDAY -> -6
+        else -> Calendar.MONDAY - currentDayOfWeek
+    }
+    startOfWeek.add(Calendar.DAY_OF_MONTH, offsetToMonday)
 
     repeat(7) { index ->
-        val day = calendarCopy.get(Calendar.DAY_OF_MONTH)
+        val day = startOfWeek.get(Calendar.DAY_OF_MONTH)
         weekDays.add(
             WeekDayItem(
                 day = day,
@@ -203,12 +210,11 @@ private fun getWeekDays(calendar: Calendar): List<WeekDayItem> {
                 amount = getAmountForDay(day)
             )
         )
-        calendarCopy.add(Calendar.DAY_OF_MONTH, 1)
+        startOfWeek.add(Calendar.DAY_OF_MONTH, 1)
     }
 
     return weekDays
 }
-
 private fun getAmountForDay(day: Int): Int {
     return when (day) {
         11 -> -450

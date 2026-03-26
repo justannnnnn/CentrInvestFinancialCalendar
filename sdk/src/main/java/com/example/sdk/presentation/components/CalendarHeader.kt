@@ -28,14 +28,14 @@ import com.example.sdk.ui.theme.Gray100
 import com.example.sdk.ui.theme.Gray900
 import com.example.sdk.ui.theme.GreenPrimary
 import com.example.sdk.ui.theme.White
+import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
-import java.text.SimpleDateFormat
 
 @Composable
 fun CalendarHeader(
     calendar: Calendar,
-    selectedViewMode: String,  // ← ДОБАВЛЕНО!
+    selectedViewMode: String,
     onPrevMonth: () -> Unit,
     onNextMonth: () -> Unit,
     onAddClick: () -> Unit,
@@ -60,7 +60,7 @@ fun CalendarHeader(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Предыдущий месяц",
+                    contentDescription = "Назад",
                     tint = Gray900,
                     modifier = Modifier
                         .size(28.dp)
@@ -75,8 +75,8 @@ fun CalendarHeader(
                     modifier = Modifier
                         .clip(RoundedCornerShape(12.dp))
                         .background(Gray100)
-                        .padding(horizontal = 14.dp, vertical = 2.dp)
                         .clickable { onPeriodClick() }
+                        .padding(horizontal = 14.dp, vertical = 2.dp)
                 ) {
                     Text(
                         text = when (selectedViewMode) {
@@ -97,7 +97,7 @@ fun CalendarHeader(
 
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                    contentDescription = "Следующий месяц",
+                    contentDescription = "Вперёд",
                     tint = Gray900,
                     modifier = Modifier
                         .size(28.dp)
@@ -126,20 +126,30 @@ fun CalendarHeader(
 }
 
 private fun getWeekRange(calendar: Calendar): String {
-    val dayFormat = SimpleDateFormat("d", Locale("ru"))
-    val monthFormat = SimpleDateFormat("MMMM yyyy", Locale("ru"))
-    val calendarCopy = calendar.clone() as Calendar
+    val start = calendar.clone() as Calendar
+    start.firstDayOfWeek = Calendar.MONDAY
 
-    // Начало недели (понедельник)
-    calendarCopy.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
-    val startDay = dayFormat.format(calendarCopy.time)
+    val currentDayOfWeek = start.get(Calendar.DAY_OF_WEEK)
+    val offsetToMonday = when (currentDayOfWeek) {
+        Calendar.SUNDAY -> -6
+        else -> Calendar.MONDAY - currentDayOfWeek
+    }
+    start.add(Calendar.DAY_OF_MONTH, offsetToMonday)
 
-    // Конец недели (воскресенье)
-    calendarCopy.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY)
-    val endDay = dayFormat.format(calendarCopy.time)
-    val monthYear = monthFormat.format(calendarCopy.time)
+    val end = start.clone() as Calendar
+    end.add(Calendar.DAY_OF_MONTH, 6)
 
-    return "$startDay - $endDay $monthYear"
+    val sameMonth = start.get(Calendar.MONTH) == end.get(Calendar.MONTH) &&
+            start.get(Calendar.YEAR) == end.get(Calendar.YEAR)
+
+    return if (sameMonth) {
+        val monthYear = SimpleDateFormat("MMMM yyyy", Locale("ru")).format(end.time)
+        "${start.get(Calendar.DAY_OF_MONTH)} - ${end.get(Calendar.DAY_OF_MONTH)} $monthYear"
+    } else {
+        val startFormat = SimpleDateFormat("d MMMM", Locale("ru"))
+        val endFormat = SimpleDateFormat("d MMMM yyyy", Locale("ru"))
+        "${startFormat.format(start.time)} - ${endFormat.format(end.time)}"
+    }
 }
 
 private fun getDayDate(calendar: Calendar): String {

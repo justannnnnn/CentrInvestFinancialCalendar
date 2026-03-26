@@ -107,4 +107,23 @@ class CalendarViewModel @Inject constructor(
         val (s, e) = if (start.isAfter(end)) end to start else start to end
         _uiState.update { it.copy(periodStart = s, periodEnd = e) }
     }
+    fun onPrevWeek() {
+        val currentDate = _uiState.value.selectedDate ?: LocalDate.now()
+        _uiState.update { it.copy(selectedDate = currentDate.minusWeeks(1)) }
+    }
+
+    fun onNextWeek() {
+        val currentDate = _uiState.value.selectedDate ?: LocalDate.now()
+        _uiState.update { it.copy(selectedDate = currentDate.plusWeeks(1)) }
+    }
+
+    fun onPrevDay() {
+        val currentDate = _uiState.value.selectedDate ?: LocalDate.now()
+        _uiState.update { it.copy(selectedDate = currentDate.minusDays(1)) }
+    }
+
+    fun onNextDay() {
+        val currentDate = _uiState.value.selectedDate ?: LocalDate.now()
+        _uiState.update { it.copy(selectedDate = currentDate.plusDays(1)) }
+    }
 }

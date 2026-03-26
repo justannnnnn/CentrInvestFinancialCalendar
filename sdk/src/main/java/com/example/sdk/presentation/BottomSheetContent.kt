@@ -37,14 +37,17 @@ import java.util.Locale
 
 @Composable
 fun BottomSheetContent(
+    calendar: Calendar,
     selectedDay: Int?,
     onAddClick: () -> Unit
 ) {
-    val mockDate = Calendar.getInstance().apply {
-        set(2025, Calendar.NOVEMBER, selectedDay ?: 14)
+    val selectedDateCal = (calendar.clone() as Calendar).apply {
+        if (selectedDay != null) {
+            set(Calendar.DAY_OF_MONTH, selectedDay)
+        }
     }
     val dateFormat = SimpleDateFormat("d MMMM, EEEE", Locale("ru"))
-    val formattedDate = dateFormat.format(mockDate.time)
+    val formattedDate = dateFormat.format(selectedDateCal.time)
         .replaceFirstChar { it.uppercase() }
 
     Column(

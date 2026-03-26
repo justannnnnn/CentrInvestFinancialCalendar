@@ -197,8 +197,11 @@ private fun DayCell(
         contentAlignment = Alignment.Center
     ) {
         Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
                 text = day.toString(),
@@ -207,9 +210,14 @@ private fun DayCell(
                 fontSize = 16.sp
             )
 
-            if (hasOperations || hasRecurring) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(horizontalArrangement = Arrangement.Center) {
+            Box(
+                modifier = Modifier.height(16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     if (hasOperations) Text("💳", fontSize = 12.sp)
                     if (hasRecurring) {
                         if (hasOperations) Spacer(modifier = Modifier.width(4.dp))

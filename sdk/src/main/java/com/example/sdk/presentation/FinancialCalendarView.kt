@@ -80,11 +80,20 @@ fun FinancialCalendarView() {
     var showPeriodDialog by remember { mutableStateOf(false) }
 
     // YearMonth -> Calendar
-    val currentMonthCal = remember(uiState.currentYearMonth) {
+    val currentMonthCal = remember(
+        uiState.currentYearMonth,
+        uiState.selectedDate,
+        uiState.selectedViewMode
+    ) {
         Calendar.getInstance().apply {
-            set(Calendar.YEAR, uiState.currentYearMonth.year)
-            set(Calendar.MONTH, uiState.currentYearMonth.monthValue - 1)
-            set(Calendar.DAY_OF_MONTH, 1)
+            val baseDate = when (uiState.selectedViewMode) {
+                ViewModeTab.Month -> uiState.currentYearMonth.atDay(1)
+                ViewModeTab.Week, ViewModeTab.Day -> uiState.selectedDate ?: LocalDate.now()
+            }
+
+            set(Calendar.YEAR, baseDate.year)
+            set(Calendar.MONTH, baseDate.monthValue - 1)
+            set(Calendar.DAY_OF_MONTH, baseDate.dayOfMonth)
             set(Calendar.HOUR_OF_DAY, 0)
             set(Calendar.MINUTE, 0)
             set(Calendar.SECOND, 0)
@@ -115,8 +124,20 @@ fun FinancialCalendarView() {
             CalendarHeader(
                 calendar = currentMonthCal,
                 selectedViewMode = selectedViewModeString,
-                onPrevMonth = { viewModel.onPrevMonth() },
-                onNextMonth = { viewModel.onNextMonth() },
+                onPrevMonth = {
+                    when (uiState.selectedViewMode) {
+                        ViewModeTab.Month -> viewModel.onPrevMonth()
+                        ViewModeTab.Week -> viewModel.onPrevWeek()
+                        ViewModeTab.Day -> viewModel.onPrevDay()
+                    }
+                },
+                onNextMonth = {
+                    when (uiState.selectedViewMode) {
+                        ViewModeTab.Month -> viewModel.onNextMonth()
+                        ViewModeTab.Week -> viewModel.onNextWeek()
+                        ViewModeTab.Day -> viewModel.onNextDay()
+                    }
+                },
                 onAddClick = { showCreateSheet = true },
                 onPeriodClick = { showPeriodDialog = true }
             )
@@ -143,6 +164,10 @@ fun FinancialCalendarView() {
                         else -> ViewModeTab.Month
                     }
                     viewModel.onChangeViewMode(mode)
+
+                    if ((mode == ViewModeTab.Week || mode == ViewModeTab.Day) && uiState.selectedDate == null) {
+                        viewModel.onSelectDate(LocalDate.now())
+                    }
                 }
             )
 
@@ -220,6 +245,7 @@ fun FinancialCalendarView() {
                 containerColor = White,
             ) {
                 BottomSheetContent(
+                    calendar = currentMonthCal,
                     selectedDay = selectedDayInt,
                     onAddClick = { showCreateSheet = true }
                 )
