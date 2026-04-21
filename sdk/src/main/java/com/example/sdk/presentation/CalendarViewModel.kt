@@ -181,10 +181,12 @@ class CalendarViewModel @Inject constructor(
             }
 
             CalendarUiAction.OnAddClick -> {
-                viewModelScope.launch {
-                    _sideEffect.emit(CalendarSideEffect.OpenAddScreen)
-                }
+                _uiState.update { it.copy(isAddTransactionVisible = true) }
             }
         }
+    }
+
+    fun onAddDismiss() {
+        _uiState.update { it.copy(isAddTransactionVisible = false) }
     }
 }

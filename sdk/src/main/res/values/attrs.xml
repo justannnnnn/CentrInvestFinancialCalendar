@@ -1,0 +1,97 @@
+<resources>
+
+    <attr name="financialCalendarStyle" format="reference" />
+    <attr name="calendarThemeOverlay" format="reference" />
+
+    <declare-styleable name="FinancialCalendarWidget">
+        <!-- Base preset -->
+        <attr name="calendarPreset" format="enum">
+            <enum name="preset_default" value="0" />
+            <enum name="ocean" value="1" />
+            <enum name="graphite" value="2" />
+        </attr>
+
+        <!-- Local overlay -->
+        <attr name="calendarThemeOverlay" />
+
+        <!-- Colors -->
+        <attr name="calendarPrimaryColor" format="color|reference" />
+        <attr name="calendarPrimaryVariantColor" format="color|reference" />
+
+        <attr name="calendarBackgroundColor" format="color|reference" />
+        <attr name="calendarSurfaceColor" format="color|reference" />
+
+        <attr name="calendarTextPrimaryColor" format="color|reference" />
+        <attr name="calendarTextSecondaryColor" format="color|reference" />
+        <attr name="calendarTextTertiaryColor" format="color|reference" />
+
+        <attr name="calendarBorderLightColor" format="color|reference" />
+        <attr name="calendarBorderMediumColor" format="color|reference" />
+
+        <attr name="calendarSelectedBackgroundColor" format="color|reference" />
+        <attr name="calendarSelectedBorderColor" format="color|reference" />
+
+        <attr name="calendarIncomeColor" format="color|reference" />
+        <attr name="calendarIncomeVariantColor" format="color|reference" />
+        <attr name="calendarExpenseColor" format="color|reference" />
+        <attr name="calendarExpenseVariantColor" format="color|reference" />
+
+        <attr name="calendarAddSheetAccentColor" format="color|reference" />
+        <attr name="calendarAddSheetAccentSecondaryColor" format="color|reference" />
+        <attr name="calendarAddSheetCategoryChipColor" format="color|reference" />
+        <attr name="calendarAddSheetRecurringAccentColor" format="color|reference" />
+
+        <!-- Icons -->
+        <attr name="calendarAddIcon" format="reference" />
+        <attr name="calendarMonthTabIcon" format="reference" />
+        <attr name="calendarWeekTabIcon" format="reference" />
+        <attr name="calendarDayTabIcon" format="reference" />
+        <attr name="calendarBottomNavIcon" format="reference" />
+        <attr name="calendarArrowLeftIcon" format="reference" />
+        <attr name="calendarArrowRightIcon" format="reference" />
+        <attr name="calendarRecurringIcon" format="reference" />
+
+        <!-- Typography: titleLarge -->
+        <attr name="calendarTitleLargeTextAppearance" format="reference" />
+        <attr name="calendarTitleLargeTextSize" format="dimension" />
+        <attr name="calendarTitleLargeLineHeight" format="dimension" />
+        <attr name="calendarTitleLargeFontWeight" format="integer" />
+
+        <!-- Typography: titleMedium -->
+        <attr name="calendarTitleMediumTextAppearance" format="reference" />
+        <attr name="calendarTitleMediumTextSize" format="dimension" />
+        <attr name="calendarTitleMediumLineHeight" format="dimension" />
+        <attr name="calendarTitleMediumFontWeight" format="integer" />
+
+        <!-- Typography: bodyLarge -->
+        <attr name="calendarBodyLargeTextAppearance" format="reference" />
+        <attr name="calendarBodyLargeTextSize" format="dimension" />
+        <attr name="calendarBodyLargeLineHeight" format="dimension" />
+        <attr name="calendarBodyLargeFontWeight" format="integer" />
+
+        <!-- Typography: bodyMedium -->
+        <attr name="calendarBodyMediumTextAppearance" format="reference" />
+        <attr name="calendarBodyMediumTextSize" format="dimension" />
+        <attr name="calendarBodyMediumLineHeight" format="dimension" />
+        <attr name="calendarBodyMediumFontWeight" format="integer" />
+
+        <!-- Typography: bodySmall -->
+        <attr name="calendarBodySmallTextAppearance" format="reference" />
+        <attr name="calendarBodySmallTextSize" format="dimension" />
+        <attr name="calendarBodySmallLineHeight" format="dimension" />
+        <attr name="calendarBodySmallFontWeight" format="integer" />
+
+        <!-- Typography: labelMedium -->
+        <attr name="calendarLabelMediumTextAppearance" format="reference" />
+        <attr name="calendarLabelMediumTextSize" format="dimension" />
+        <attr name="calendarLabelMediumLineHeight" format="dimension" />
+        <attr name="calendarLabelMediumFontWeight" format="integer" />
+
+        <!-- Typography: labelSmall -->
+        <attr name="calendarLabelSmallTextAppearance" format="reference" />
+        <attr name="calendarLabelSmallTextSize" format="dimension" />
+        <attr name="calendarLabelSmallLineHeight" format="dimension" />
+        <attr name="calendarLabelSmallFontWeight" format="integer" />
+    </declare-styleable>
+
+</resources>

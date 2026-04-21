@@ -14,13 +14,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.sdk.R
-import com.example.sdk.ui.theme.Gray900
-import com.example.sdk.ui.theme.GreenPrimary
+import com.example.sdk.ui.theme.CalendarTheme
 
 @Composable
 fun AllTransactionsHeader(
     onViewAllClick: () -> Unit = {}
 ) {
+    val colors = CalendarTheme.colors
+
     Row(
         modifier = Modifier
             .padding(bottom = 8.dp, top = 24.dp)
@@ -33,12 +34,12 @@ fun AllTransactionsHeader(
             text = stringResource(R.string.all_transactions),
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
-            color = Gray900
+            color = colors.textPrimary
         )
         Text(
             text = stringResource(R.string.look_all),
             fontSize = 14.sp,
-            color = GreenPrimary,
+            color = colors.primary,
             modifier = Modifier.clickable { onViewAllClick() }
         )
     }

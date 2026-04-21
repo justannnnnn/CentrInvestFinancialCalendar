@@ -12,9 +12,11 @@ object RetrofitInstance {
 
     private val client = OkHttpClient.Builder()
         .addInterceptor(SupabaseAuthInterceptor(CalendarSdk.SUPABASE_ANON_KEY))
-        .addInterceptor(HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
-        })
+        .addInterceptor(
+            HttpLoggingInterceptor().apply {
+                level = HttpLoggingInterceptor.Level.BODY
+            }
+        )
         .build()
 
     private val gson = GsonBuilder()

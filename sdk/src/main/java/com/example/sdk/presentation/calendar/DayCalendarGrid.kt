@@ -22,17 +22,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.sdk.domain.model.Transaction
-import com.example.sdk.ui.theme.Gray100
-import com.example.sdk.ui.theme.Gray300
-import com.example.sdk.ui.theme.Gray500
-import com.example.sdk.ui.theme.Gray900
-import com.example.sdk.ui.theme.GreenPrimary
-import com.example.sdk.ui.theme.White
+import com.example.sdk.ui.theme.CalendarTheme
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -45,6 +38,8 @@ fun DayCalendarGrid(
     transactions: List<Transaction>,
     onDaySelected: (Int) -> Unit
 ) {
+    val colors = CalendarTheme.colors
+    val typography = CalendarTheme.typography
     val currentDay = selectedDay ?: calendar.get(Calendar.DAY_OF_MONTH)
 
     val selectedDateCalendar = (calendar.clone() as Calendar).apply {
@@ -89,15 +84,14 @@ fun DayCalendarGrid(
             ) {
                 Text(
                     text = formattedDate,
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Gray900
+                    style = typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    color = colors.textPrimary
                 )
 
                 Text(
                     text = "${transactions.size} ${getOperationWord(transactions.size)}",
-                    fontSize = 14.sp,
-                    color = Gray500,
+                    style = typography.bodyMedium,
+                    color = colors.textSecondary,
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
@@ -116,8 +110,8 @@ fun DayCalendarGrid(
                         .background(
                             Brush.verticalGradient(
                                 colors = listOf(
-                                    Color(0xFF00A86B),
-                                    Color(0xFF00C878)
+                                    colors.income,
+                                    colors.incomeVariant
                                 )
                             )
                         )
@@ -127,14 +121,13 @@ fun DayCalendarGrid(
                     Column {
                         Text(
                             text = "Доходы",
-                            fontSize = 12.sp,
-                            color = White.copy(alpha = 0.8f)
+                            style = typography.labelSmall,
+                            color = colors.surface.copy(alpha = 0.8f)
                         )
                         Text(
                             text = "+${formatAmount(income)} ₽",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = White
+                            style = typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                            color = colors.surface
                         )
                     }
                 }
@@ -147,8 +140,8 @@ fun DayCalendarGrid(
                         .background(
                             Brush.verticalGradient(
                                 colors = listOf(
-                                    Color(0xFFF95E5A),
-                                    Color(0xFFFF7875)
+                                    colors.expense,
+                                    colors.expenseVariant
                                 )
                             )
                         )
@@ -158,14 +151,13 @@ fun DayCalendarGrid(
                     Column {
                         Text(
                             text = "Расходы",
-                            fontSize = 12.sp,
-                            color = White.copy(alpha = 0.8f)
+                            style = typography.labelSmall,
+                            color = colors.surface.copy(alpha = 0.8f)
                         )
                         Text(
                             text = "-${formatAmount(expenseAbs)} ₽",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = White
+                            style = typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                            color = colors.surface
                         )
                     }
                 }
@@ -176,9 +168,8 @@ fun DayCalendarGrid(
             item {
                 Text(
                     text = "Топ категорий",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Gray900,
+                    style = typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = colors.textPrimary,
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
             }
@@ -193,7 +184,7 @@ fun DayCalendarGrid(
                         .clickable { onDaySelected(currentDay) },
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = Gray100
+                        containerColor = colors.borderLight
                     )
                 ) {
                     Column(
@@ -211,22 +202,20 @@ fun DayCalendarGrid(
                             ) {
                                 Text(
                                     text = categoryInfo.icon,
-                                    fontSize = 20.sp,
+                                    style = typography.titleMedium,
                                     modifier = Modifier.padding(end = 8.dp)
                                 )
                                 Text(
                                     text = categoryInfo.name,
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = Gray900
+                                    style = typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                                    color = colors.textPrimary
                                 )
                             }
 
                             Text(
                                 text = "${formatAmount(amount)} ₽",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Gray900
+                                style = typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                                color = colors.textPrimary
                             )
                         }
 
@@ -237,14 +226,14 @@ fun DayCalendarGrid(
                                 .fillMaxWidth()
                                 .height(6.dp)
                                 .clip(RoundedCornerShape(3.dp))
-                                .background(Gray300)
+                                .background(colors.borderMedium)
                         ) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth(percentage / 100f)
                                     .height(6.dp)
                                     .clip(RoundedCornerShape(3.dp))
-                                    .background(GreenPrimary)
+                                    .background(colors.primary)
                             )
                         }
                     }
@@ -255,9 +244,8 @@ fun DayCalendarGrid(
         item {
             Text(
                 text = "Все операции",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Gray900,
+                style = typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = colors.textPrimary,
                 modifier = Modifier.padding(vertical = 8.dp)
             )
         }
@@ -267,7 +255,7 @@ fun DayCalendarGrid(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Gray100)
+                    colors = CardDefaults.cardColors(containerColor = colors.borderLight)
                 ) {
                     Box(
                         modifier = Modifier
@@ -277,8 +265,8 @@ fun DayCalendarGrid(
                     ) {
                         Text(
                             text = "На этот день операций нет",
-                            fontSize = 14.sp,
-                            color = Gray500
+                            style = typography.bodyMedium,
+                            color = colors.textSecondary
                         )
                     }
                 }
@@ -299,6 +287,8 @@ fun DayCalendarGrid(
 private fun SimpleTransactionItem(
     transaction: Transaction
 ) {
+    val colors = CalendarTheme.colors
+    val typography = CalendarTheme.typography
     val categoryName = transaction.category.toString()
     val categoryInfo = getCategoryInfo(categoryName)
     val isExpense = transaction.amount < 0
@@ -306,7 +296,7 @@ private fun SimpleTransactionItem(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = White)
+        colors = CardDefaults.cardColors(containerColor = colors.surface)
     ) {
         Row(
             modifier = Modifier
@@ -323,12 +313,12 @@ private fun SimpleTransactionItem(
                     modifier = Modifier
                         .size(44.dp)
                         .clip(RoundedCornerShape(14.dp))
-                        .background(Gray100),
+                        .background(colors.borderLight),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = categoryInfo.icon,
-                        fontSize = 20.sp
+                        style = typography.titleMedium
                     )
                 }
 
@@ -337,15 +327,14 @@ private fun SimpleTransactionItem(
                 ) {
                     Text(
                         text = transaction.note ?: categoryInfo.name,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Gray900
+                        style = typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                        color = colors.textPrimary
                     )
 
                     Text(
                         text = categoryInfo.name,
-                        fontSize = 13.sp,
-                        color = Gray500
+                        style = typography.bodySmall,
+                        color = colors.textSecondary
                     )
                 }
             }
@@ -356,9 +345,8 @@ private fun SimpleTransactionItem(
                 } else {
                     "+ ${formatAmount(transaction.amount.toDouble())} ₽"
                 },
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = if (isExpense) Gray900 else GreenPrimary
+                style = typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                color = if (isExpense) colors.textPrimary else colors.primary
             )
         }
     }

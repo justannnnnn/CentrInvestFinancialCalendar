@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -28,20 +27,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.sdk.data.network.dto.TransactionType
 import com.example.sdk.domain.model.DayData
-import com.example.sdk.ui.theme.Gray100
-import com.example.sdk.ui.theme.Gray500
-import com.example.sdk.ui.theme.Gray900
-import com.example.sdk.ui.theme.GreenPrimary
-import com.example.sdk.ui.theme.White
-import java.util.Calendar
-import com.example.sdk.presentation.statistics.StatsSummaryBlock
-import com.example.sdk.presentation.statistics.StatsCategoryList
 import com.example.sdk.presentation.statistics.DonutChartWithStats
-import com.example.sdk.presentation.transactions.AllTransactionsHeader
-import com.example.sdk.presentation.transactions.TransactionsList
+import com.example.sdk.presentation.statistics.StatsCategoryList
+import com.example.sdk.presentation.statistics.StatsSummaryBlock
+import com.example.sdk.ui.theme.CalendarTheme
+import java.util.Calendar
 
 @Composable
 fun MonthCalendarGrid(
@@ -62,6 +54,7 @@ fun MonthCalendarGrid(
     val allTransactions = daysData.values
         .flatMap { it.transactions }
         .filter { it.amount != 0L }
+
     val categoriesToSum = allTransactions
         .map { it.category to it.amount }
         .groupingBy { it.first }
@@ -83,15 +76,20 @@ fun MonthCalendarGrid(
         )
 
         StatsSummaryBlock(
-            incomeSum = allTransactions.filter { it.type == TransactionType.INCOME }
+            incomeSum = allTransactions
+                .filter { it.type == TransactionType.INCOME }
                 .sumOf { it.amount },
-            expenseSum = allTransactions.filter { it.type == TransactionType.EXPENSE }
+            expenseSum = allTransactions
+                .filter { it.type == TransactionType.EXPENSE }
                 .sumOf { it.amount }
         )
+
         Divider()
+
         DonutChartWithStats(categoriesToSum = categoriesToSum)
         StatsCategoryList(categoriesToSum = categoriesToSum)
-        TransactionsList(transactions = allTransactions)
+
+        MonthTransactionsFallback(transactionsCount = allTransactions.size)
     }
 }
 
@@ -104,15 +102,14 @@ private fun CalendarGrid(
     onDaySelected: (Int) -> Unit
 ) {
     WeekDaysHeader()
+
     LazyVerticalGrid(
         columns = GridCells.Fixed(7),
         verticalArrangement = Arrangement.spacedBy(6.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .height(
-                (((daysInMonth + firstDayOffset + 6) / 7) * 56).dp
-            ),
+            .height((((daysInMonth + firstDayOffset + 6) / 7) * 56).dp),
         userScrollEnabled = false
     ) {
         items(firstDayOffset) {
@@ -141,14 +138,17 @@ private fun DayCell(
     hasRecurring: Boolean,
     onClick: () -> Unit
 ) {
+    val colors = CalendarTheme.colors
+    val typography = CalendarTheme.typography
+
     Box(
         modifier = Modifier
             .size(48.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(if (isSelected) GreenPrimary.copy(alpha = 0.12f) else White)
+            .background(if (isSelected) colors.selectedBackground else colors.surface)
             .border(
                 width = 1.dp,
-                color = if (isSelected) GreenPrimary else Gray100,
+                color = if (isSelected) colors.selectedBorder else colors.borderLight,
                 shape = RoundedCornerShape(12.dp)
             )
             .clickable { onClick() }
@@ -161,9 +161,10 @@ private fun DayCell(
         ) {
             Text(
                 text = day.toString(),
-                color = if (isSelected) GreenPrimary else Gray900,
-                fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
-                fontSize = 16.sp
+                style = typography.bodyLarge.copy(
+                    fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal
+                ),
+                color = if (isSelected) colors.primary else colors.textPrimary
             )
 
             if (hasOperations || hasRecurring) {
@@ -171,12 +172,21 @@ private fun DayCell(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (hasOperations) Text("💳", fontSize = 10.sp)
+                    if (hasOperations) {
+                        Text(
+                            text = "💳",
+                            style = typography.labelSmall
+                        )
+                    }
 
                     if (hasRecurring) {
-                        if (hasOperations) Spacer(modifier = Modifier.width(4.dp))
-
-                        Text("🔁", fontSize = 10.sp)
+                        if (hasOperations) {
+                            Spacer(modifier = Modifier.width(4.dp))
+                        }
+                        Text(
+                            text = "🔁",
+                            style = typography.labelSmall
+                        )
                     }
                 }
             }
@@ -186,15 +196,17 @@ private fun DayCell(
 
 @Composable
 private fun WeekDaysHeader() {
+    val colors = CalendarTheme.colors
+    val typography = CalendarTheme.typography
+
     Row(modifier = Modifier.fillMaxWidth()) {
         listOf("Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс").forEach { day ->
             Text(
                 text = day,
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Center,
-                color = Gray500,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium
+                color = colors.textSecondary,
+                style = typography.labelSmall.copy(fontWeight = FontWeight.Medium)
             )
         }
     }
@@ -202,11 +214,35 @@ private fun WeekDaysHeader() {
 
 @Composable
 private fun Divider() {
+    val colors = CalendarTheme.colors
+
     Box(
         modifier = Modifier
             .padding(top = 8.dp, bottom = 16.dp)
             .fillMaxWidth()
             .height(1.dp)
-            .background(Gray100)
+            .background(colors.borderLight)
     )
+}
+
+@Composable
+private fun MonthTransactionsFallback(transactionsCount: Int) {
+    val colors = CalendarTheme.colors
+    val typography = CalendarTheme.typography
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                color = colors.borderLight,
+                shape = RoundedCornerShape(16.dp)
+            )
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "Операций за месяц: $transactionsCount",
+            style = typography.bodyMedium,
+            color = colors.textSecondary
+        )
+    }
 }

@@ -15,7 +15,8 @@ data class CalendarUiState(
     val viewModeTabs: List<ViewModeTab> =
         listOf(ViewModeTab.Month, ViewModeTab.Week, ViewModeTab.Day),
     val selectedViewMode: ViewModeTab = ViewModeTab.Month,
-    val showBottomSheet: Boolean = false
+    val showBottomSheet: Boolean = false,
+    val isAddTransactionVisible: Boolean = false
 ) {
     val allMonthTransactions: List<Transaction>
         get() = daysData.values.flatMap { it.transactions }

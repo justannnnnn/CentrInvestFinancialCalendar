@@ -17,19 +17,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.sdk.domain.model.Category
-import com.example.sdk.ui.theme.Gray500
-import com.example.sdk.ui.theme.Gray900
-import com.example.sdk.ui.theme.GreenPrimary
+import com.example.sdk.ui.theme.CalendarTheme
 
 @SuppressLint("DefaultLocale")
 @Composable
 fun StatsCategoryList(categoriesToSum: Map<Category, Long>) {
+    val colors = CalendarTheme.colors
+    val typography = CalendarTheme.typography
     val totalExpenses = categoriesToSum.filter { it.key.isIncome.not() }.values.sum()
 
     Column(
@@ -38,12 +36,13 @@ fun StatsCategoryList(categoriesToSum: Map<Category, Long>) {
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
     ) {
-        categoriesToSum.entries.sortedByDescending { it.value }
+        categoriesToSum.entries
+            .sortedByDescending { it.value }
             .forEach { (category, sum) ->
-                val percentage = if (category.isIncome) {
+                val percentage = if (category.isIncome || totalExpenses == 0L) {
                     0f
                 } else {
-                    (sum.toFloat() / totalExpenses.toFloat() * 100)
+                    (sum.toFloat() / totalExpenses.toFloat() * 100f)
                 }
 
                 Row(
@@ -60,13 +59,15 @@ fun StatsCategoryList(categoriesToSum: Map<Category, Long>) {
                         Box(
                             modifier = Modifier
                                 .size(40.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(Color(category.color).copy(alpha = 0.12f)),
+                                .background(
+                                    color = Color(category.color).copy(alpha = 0.12f),
+                                    shape = RoundedCornerShape(12.dp)
+                                ),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = category.icon,
-                                fontSize = 20.sp
+                                style = typography.titleMedium
                             )
                         }
 
@@ -75,15 +76,14 @@ fun StatsCategoryList(categoriesToSum: Map<Category, Long>) {
                         Column {
                             Text(
                                 text = category.title,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Gray900
+                                style = typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                                color = colors.textPrimary
                             )
                             if (category.isIncome.not()) {
                                 Text(
                                     text = String.format("%.1f%%", percentage),
-                                    fontSize = 12.sp,
-                                    color = Gray500
+                                    style = typography.labelSmall,
+                                    color = colors.textSecondary
                                 )
                             }
                         }
@@ -91,9 +91,8 @@ fun StatsCategoryList(categoriesToSum: Map<Category, Long>) {
 
                     Text(
                         text = "${if (!category.isIncome) "- " else ""}${sum.formatSum()} ₽",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = if (category.isIncome) GreenPrimary else Gray900
+                        style = typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                        color = if (category.isIncome) colors.primary else colors.textPrimary
                     )
                 }
 
@@ -101,7 +100,7 @@ fun StatsCategoryList(categoriesToSum: Map<Category, Long>) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(1.dp)
-                        .background(Gray500.copy(alpha = 0.2f))
+                        .background(colors.borderLight)
                 )
             }
     }

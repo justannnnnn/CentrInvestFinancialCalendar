@@ -17,13 +17,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.sdk.presentation.models.ViewModeTab
-import com.example.sdk.ui.theme.Gray100
-import com.example.sdk.ui.theme.Gray500
-import com.example.sdk.ui.theme.GreenPrimary
+import com.example.sdk.ui.theme.CalendarTheme
 
 @Composable
 fun ViewModeTabs(
@@ -48,17 +44,20 @@ fun ViewModeTabs(
 }
 
 @Composable
-fun CalendarViewModeTab(
+private fun CalendarViewModeTab(
     tab: ViewModeTab,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
+    val colors = CalendarTheme.colors
+    val typography = CalendarTheme.typography
+
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             modifier = Modifier
                 .size(40.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(if (isSelected) GreenPrimary else Gray100)
+                .background(if (isSelected) colors.selectedBackground else colors.borderLight)
                 .clickable { onClick() },
             contentAlignment = Alignment.Center
         ) {
@@ -69,9 +68,8 @@ fun CalendarViewModeTab(
 
         Text(
             text = stringResource(tab.name),
-            fontSize = 12.sp,
-            color = if (isSelected) GreenPrimary else Gray500,
-            fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal
+            style = typography.labelSmall,
+            color = if (isSelected) colors.primary else colors.textSecondary
         )
     }
 }

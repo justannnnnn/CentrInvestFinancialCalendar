@@ -14,7 +14,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -23,12 +22,12 @@ import androidx.compose.ui.unit.sp
 import com.example.sdk.R
 import com.example.sdk.domain.model.Category
 import com.example.sdk.presentation.utils.AutoSizeText
-import com.example.sdk.ui.theme.Gray500
-import com.example.sdk.ui.theme.GreenPrimary
-import com.example.sdk.ui.theme.White
+import com.example.sdk.ui.theme.CalendarTheme
 
 @Composable
 fun DonutChartWithStats(categoriesToSum: Map<Category, Long>) {
+    val colors = CalendarTheme.colors
+    val typography = CalendarTheme.typography
     val expenseCategories = categoriesToSum.filter { it.key.isIncome.not() }
 
     val totalExpenses = expenseCategories.values.sumOf { it }
@@ -38,17 +37,19 @@ fun DonutChartWithStats(categoriesToSum: Map<Category, Long>) {
     val segments = mutableListOf<DonutSegment>()
     var startAngle = -90f
 
-    expenseCategories.forEach { (category, sum) ->
-        val sweepAngle = (sum.toFloat() / totalExpenses.toFloat()) * 360f
-        segments.add(
-            DonutSegment(
-                color = Color(category.color),
-                startAngle = startAngle,
-                sweepAngle = sweepAngle,
-                category = category
+    if (totalExpenses > 0) {
+        expenseCategories.forEach { (category, sum) ->
+            val sweepAngle = (sum.toFloat() / totalExpenses.toFloat()) * 360f
+            segments.add(
+                DonutSegment(
+                    color = Color(category.color),
+                    startAngle = startAngle,
+                    sweepAngle = sweepAngle,
+                    category = category
+                )
             )
-        )
-        startAngle += sweepAngle
+            startAngle += sweepAngle
+        }
     }
 
     Box(
@@ -77,8 +78,10 @@ fun DonutChartWithStats(categoriesToSum: Map<Category, Long>) {
         Box(
             modifier = Modifier
                 .size(100.dp)
-                .clip(CircleShape)
-                .background(White),
+                .background(
+                    color = colors.surface,
+                    shape = CircleShape
+                ),
             contentAlignment = Alignment.Center
         ) {
             Column(
@@ -87,8 +90,8 @@ fun DonutChartWithStats(categoriesToSum: Map<Category, Long>) {
             ) {
                 Text(
                     text = stringResource(R.string.balance),
-                    fontSize = 12.sp,
-                    color = Gray500
+                    style = typography.labelSmall,
+                    color = colors.textSecondary
                 )
                 AutoSizeText(
                     text = "${balance.formatSum()} ₽",
@@ -96,7 +99,7 @@ fun DonutChartWithStats(categoriesToSum: Map<Category, Long>) {
                     minTextSize = 12.sp,
                     maxLines = 1,
                     fontWeight = FontWeight.Bold,
-                    color = if (balance < 0) Color(0xFFF95E5A) else GreenPrimary
+                    color = if (balance < 0) colors.expense else colors.primary
                 )
             }
         }

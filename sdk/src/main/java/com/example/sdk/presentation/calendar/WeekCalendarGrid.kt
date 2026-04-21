@@ -14,29 +14,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.sdk.R
 import com.example.sdk.domain.model.DayData
 import com.example.sdk.presentation.statistics.formatSum
-import com.example.sdk.ui.theme.Gray100
-import com.example.sdk.ui.theme.Gray500
-import com.example.sdk.ui.theme.Gray600
-import com.example.sdk.ui.theme.Gray900
-import com.example.sdk.ui.theme.GreenPrimary
-import com.example.sdk.ui.theme.White
+import com.example.sdk.ui.theme.CalendarTheme
 import java.util.Calendar
-import kotlin.math.abs
 
 @Composable
 fun WeekCalendarGrid(
@@ -45,6 +35,8 @@ fun WeekCalendarGrid(
     daysData: Map<Int, DayData>,
     onDaySelected: (Int) -> Unit,
 ) {
+    val colors = CalendarTheme.colors
+    val typography = CalendarTheme.typography
     val weekDays = getWeekDays(calendar, daysData)
     val weekTotal = weekDays.sumOf { it.amount }
 
@@ -64,14 +56,13 @@ fun WeekCalendarGrid(
             ) {
                 Text(
                     text = stringResource(R.string.week_summary),
-                    fontSize = 16.sp,
-                    color = Gray500
+                    style = typography.bodyLarge,
+                    color = colors.textSecondary
                 )
                 Text(
                     text = "${weekTotal.formatSum()} ₽",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = if (weekTotal < 0) Color(0xFFF95E5A) else GreenPrimary
+                    style = typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    color = if (weekTotal < 0) colors.expense else colors.primary
                 )
             }
         }
@@ -125,16 +116,19 @@ private fun WeekDayCard(
     hasRecurring: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val colors = CalendarTheme.colors
+    val typography = CalendarTheme.typography
+
     Column(
         modifier = modifier
             .height(120.dp)
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(if (isSelected) GreenPrimary.copy(alpha = 0.05f) else White)
+            .clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
+            .background(if (isSelected) colors.selectedBackground else colors.surface)
             .border(
                 width = 2.dp,
-                color = if (isSelected) GreenPrimary else Gray100,
-                shape = RoundedCornerShape(16.dp)
+                color = if (isSelected) colors.selectedBorder else colors.borderLight,
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
             )
             .clickable { onClick() }
             .padding(12.dp),
@@ -143,32 +137,43 @@ private fun WeekDayCard(
     ) {
         Text(
             text = dayItem.dayOfWeek,
-            fontSize = 12.sp,
-            color = Gray500
+            style = typography.labelSmall,
+            color = colors.textSecondary
         )
 
         Text(
             text = dayItem.day.toString(),
-            fontSize = 24.sp,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-            color = if (isSelected) GreenPrimary else Gray900
+            style = typography.titleLarge.copy(
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+            ),
+            color = if (isSelected) colors.primary else colors.textPrimary
         )
 
         Row(
             horizontalArrangement = Arrangement.Center,
             modifier = Modifier.height(20.dp)
         ) {
-            if (hasOperations) Text("💳", fontSize = 12.sp)
+            if (hasOperations) {
+                Text(
+                    text = "💳",
+                    style = typography.labelSmall
+                )
+            }
             if (hasRecurring) {
-                if (hasOperations) Spacer(modifier = Modifier.width(4.dp))
-                Text("🔁", fontSize = 12.sp)
+                if (hasOperations) {
+                    Spacer(modifier = Modifier.width(4.dp))
+                }
+                Text(
+                    text = "🔁",
+                    style = typography.labelSmall
+                )
             }
         }
 
         Text(
             text = dayItem.amount.formatSum(),
-            fontSize = 12.sp,
-            color = if (dayItem.amount < 0) Gray600 else GreenPrimary
+            style = typography.labelSmall,
+            color = if (dayItem.amount < 0) colors.expense else colors.primary
         )
     }
 }

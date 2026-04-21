@@ -26,7 +26,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
@@ -35,12 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.sdk.domain.model.Category
 import com.example.sdk.presentation.statistics.formatSum
-import com.example.sdk.ui.theme.Gray100
-import com.example.sdk.ui.theme.Gray500
-import com.example.sdk.ui.theme.Gray900
-import com.example.sdk.ui.theme.GreenPrimary
-import com.example.sdk.ui.theme.White
-import kotlin.math.abs
+import com.example.sdk.ui.theme.CalendarTheme
 import kotlin.math.roundToInt
 
 data class SwipeableTransaction(
@@ -56,6 +50,8 @@ fun SwipeableTransactionItem(
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val colors = CalendarTheme.colors
+
     var offsetX by remember { mutableFloatStateOf(0f) }
 
     val swipeThreshold = 72f
@@ -66,15 +62,14 @@ fun SwipeableTransactionItem(
         modifier = Modifier
             .fillMaxWidth()
             .height(76.dp)
-            .clip(cardShape)
-            .background(Color(0xFFF7F7F8))
+            .background(
+                color = colors.borderLight,
+                shape = cardShape
+            )
     ) {
-        // Фон действий
         Row(
-            modifier = Modifier
-                .matchParentSize()
+            modifier = Modifier.matchParentSize()
         ) {
-            // Левая зона (редактировать)
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -102,7 +97,6 @@ fun SwipeableTransactionItem(
                 }
             }
 
-            // Правая зона (удалить)
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -117,28 +111,27 @@ fun SwipeableTransactionItem(
                 ) {
                     Text(
                         text = "Удалить",
-                        color = Color(0xFFF95E5A),
+                        color = colors.expense,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium
                     )
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = "Удалить",
-                        tint = Color(0xFFF95E5A),
+                        tint = colors.expense,
                         modifier = Modifier.size(18.dp)
                     )
                 }
             }
         }
 
-        // Нажимаемые action-зоны
         Box(
             modifier = Modifier
                 .align(Alignment.CenterStart)
                 .fillMaxHeight()
                 .padding(start = 8.dp)
                 .size(width = 88.dp, height = 60.dp)
-                .clip(RoundedCornerShape(14.dp))
+                .background(Color.Transparent, RoundedCornerShape(14.dp))
                 .clickable(enabled = offsetX >= maxOffset * 0.9f) {
                     offsetX = 0f
                     onEdit()
@@ -151,21 +144,22 @@ fun SwipeableTransactionItem(
                 .fillMaxHeight()
                 .padding(end = 8.dp)
                 .size(width = 88.dp, height = 60.dp)
-                .clip(RoundedCornerShape(14.dp))
+                .background(Color.Transparent, RoundedCornerShape(14.dp))
                 .clickable(enabled = offsetX <= -maxOffset * 0.9f) {
                     offsetX = 0f
                     onDelete()
                 }
         )
 
-        // Белая карточка поверх
         Box(
             modifier = Modifier
                 .offset { IntOffset(offsetX.roundToInt(), 0) }
                 .fillMaxWidth()
                 .height(76.dp)
-                .clip(cardShape)
-                .background(White)
+                .background(
+                    color = colors.surface,
+                    shape = cardShape
+                )
                 .pointerInput(Unit) {
                     detectHorizontalDragGestures(
                         onDragEnd = {
@@ -185,7 +179,7 @@ fun SwipeableTransactionItem(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { /* Открыть детали */ }
+                    .clickable { }
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -197,8 +191,10 @@ fun SwipeableTransactionItem(
                     Box(
                         modifier = Modifier
                             .size(48.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(Color(transaction.category.color).copy(alpha = 0.12f)),
+                            .background(
+                                color = Color(transaction.category.color).copy(alpha = 0.12f),
+                                shape = RoundedCornerShape(16.dp)
+                            ),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -216,22 +212,23 @@ fun SwipeableTransactionItem(
                             text = transaction.name,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium,
-                            color = Gray900
+                            color = colors.textPrimary
                         )
                         Text(
                             text = transaction.category.title,
                             fontSize = 14.sp,
-                            color = Gray500
+                            color = colors.textSecondary
                         )
                     }
                 }
+
                 val isIncome = transaction.category.isIncome
 
                 Text(
                     text = "${if (isIncome) "+" else "-"} ${transaction.amount.formatSum()} ₽",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
-                    color = if (isIncome) GreenPrimary else Gray900
+                    color = if (isIncome) colors.primary else colors.textPrimary
                 )
             }
         }

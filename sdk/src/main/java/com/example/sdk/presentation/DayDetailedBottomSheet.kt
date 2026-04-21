@@ -21,22 +21,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.sdk.R
 import com.example.sdk.domain.model.Transaction
 import com.example.sdk.presentation.components.IconWrapper
 import com.example.sdk.presentation.statistics.formatSum
-import com.example.sdk.ui.theme.Gray100
-import com.example.sdk.ui.theme.Gray500
-import com.example.sdk.ui.theme.Gray900
-import com.example.sdk.ui.theme.GreenPrimary
-import com.example.sdk.ui.theme.White
+import com.example.sdk.ui.theme.CalendarTheme
 import com.example.sdk.utils.getDateFormat
 import com.example.sdk.utils.getQuantityStringRu
 import java.util.Calendar
@@ -49,6 +42,8 @@ fun DayDetailedBottomSheet(
     onClickAdd: () -> Unit,
     onClickTransaction: () -> Unit
 ) {
+    val colors = CalendarTheme.colors
+    val typography = CalendarTheme.typography
     val scrollState = rememberScrollState()
 
     Column(
@@ -56,7 +51,7 @@ fun DayDetailedBottomSheet(
             .fillMaxWidth()
             .heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.7).dp)
             .verticalScroll(scrollState)
-            .background(White)
+            .background(colors.surface)
     ) {
         Row(
             modifier = Modifier
@@ -71,9 +66,8 @@ fun DayDetailedBottomSheet(
         Text(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             text = getDateFormat(selectedDay.time),
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            color = Gray900
+            style = typography.titleLarge,
+            color = colors.textPrimary
         )
 
         DayStats(
@@ -119,6 +113,9 @@ private fun TransactionItem(
     color: Long,
     onClickTransaction: () -> Unit
 ) {
+    val colors = CalendarTheme.colors
+    val typography = CalendarTheme.typography
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -134,13 +131,15 @@ private fun TransactionItem(
             Box(
                 modifier = Modifier
                     .size(48.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color(color).copy(alpha = 0.12f)),
+                    .background(
+                        color = Color(color).copy(alpha = 0.12f),
+                        shape = RoundedCornerShape(16.dp)
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = icon,
-                    fontSize = 24.sp
+                    style = typography.titleLarge
                 )
             }
 
@@ -151,23 +150,21 @@ private fun TransactionItem(
             ) {
                 Text(
                     text = name,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Gray900
+                    style = typography.bodyLarge,
+                    color = colors.textPrimary
                 )
                 Text(
                     text = category,
-                    fontSize = 14.sp,
-                    color = Gray500
+                    style = typography.bodyMedium,
+                    color = colors.textSecondary
                 )
             }
         }
 
         Text(
             text = "${amount.formatSum()} ₽",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Medium,
-            color = if (amount < 0) Gray900 else GreenPrimary
+            style = typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+            color = if (amount < 0) colors.textPrimary else colors.primary
         )
     }
 
@@ -175,29 +172,53 @@ private fun TransactionItem(
         modifier = Modifier
             .fillMaxWidth()
             .height(1.dp)
-            .background(Gray100)
+            .background(colors.borderLight)
     )
 }
 
 @Composable
 private fun EmptyBottomSheetState() {
-    // tODO
+    val colors = CalendarTheme.colors
+    val typography = CalendarTheme.typography
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 24.dp)
+            .background(
+                color = colors.borderLight,
+                shape = RoundedCornerShape(16.dp)
+            )
+            .padding(20.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "На выбранный день операций нет",
+            style = typography.bodyMedium,
+            color = colors.textSecondary
+        )
+    }
 }
 
 @Composable
 private fun PlusButton(onClick: () -> Unit) {
+    val colors = CalendarTheme.colors
+    val icons = CalendarTheme.icons
+
     Box(
         modifier = Modifier
             .size(40.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(GreenPrimary)
-            .clickable { onClick.invoke() },
+            .background(
+                color = colors.primary,
+                shape = RoundedCornerShape(12.dp)
+            )
+            .clickable { onClick() },
         contentAlignment = Alignment.Center
     ) {
         IconWrapper(
             modifier = Modifier.size(24.dp),
-            iconRes = R.drawable.plus,
-            color = White
+            iconRes = icons.add,
+            color = colors.surface
         )
     }
 }
@@ -207,6 +228,9 @@ private fun DayStats(
     transactionCount: Int,
     dayBalance: Long
 ) {
+    val colors = CalendarTheme.colors
+    val typography = CalendarTheme.typography
+
     Row(
         modifier = Modifier
             .padding(bottom = 8.dp)
@@ -217,20 +241,16 @@ private fun DayStats(
     ) {
         Text(
             text = LocalContext.current.getQuantityStringRu(
-                R.plurals.number_of_operations,
+                com.example.sdk.R.plurals.number_of_operations,
                 transactionCount
             ),
-            fontSize = 14.sp,
-            color = Gray500
+            style = typography.bodyMedium,
+            color = colors.textSecondary
         )
         Text(
             text = "${dayBalance.formatSum()} ₽",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            color = if (dayBalance < 0) Color(0xFFF95E5A) else Color(0xFF10B981)
+            style = typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+            color = if (dayBalance < 0) colors.expense else colors.income
         )
     }
 }
-
-
-
