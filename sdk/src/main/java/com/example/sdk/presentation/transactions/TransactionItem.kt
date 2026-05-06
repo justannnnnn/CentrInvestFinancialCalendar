@@ -14,23 +14,25 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.sdk.domain.model.Transaction
+import com.example.sdk.domain.model.CalendarCategory
+import com.example.sdk.domain.model.CalendarOperation
 import com.example.sdk.ui.theme.CalendarTheme
 
 @Composable
 fun TransactionItem(
-    transaction: Transaction,
+    operation: CalendarOperation,
+    category: CalendarCategory?,
     modifier: Modifier = Modifier
 ) {
     val colors = CalendarTheme.colors
     val typography = CalendarTheme.typography
 
-    val category = transaction.category
-    val title = if (transaction.note.isNullOrBlank()) category.title else transaction.note
-    val sign = if (transaction.amount > 0) "+" else ""
-    val amountColor = if (transaction.amount > 0) colors.primary else colors.expense
+    val title = operation.title
+    val sign = if (operation.amount > 0) "+" else ""
+    val amountColor = if (operation.amount > 0) colors.primary else colors.expense
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -42,7 +44,7 @@ fun TransactionItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = category.icon,
+                text = category?.iconUrl ?: "❓",
                 style = typography.titleLarge,
                 modifier = Modifier.size(40.dp)
             )
@@ -56,14 +58,14 @@ fun TransactionItem(
                     color = colors.textPrimary
                 )
                 Text(
-                    text = category.title,
+                    text = category?.name ?: "Unknown",
                     style = typography.bodySmall,
                     color = colors.textSecondary
                 )
             }
 
             Text(
-                text = "$sign${transaction.amount} ₽",
+                text = "$sign${operation.amount / 100.0} ₽",
                 style = typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
                 color = amountColor
             )

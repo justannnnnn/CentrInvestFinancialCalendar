@@ -13,29 +13,9 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SheetValue
-import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
@@ -55,11 +35,7 @@ import com.example.sdk.presentation.models.CustomCalendarTheme
 import com.example.sdk.presentation.models.ThemeSelection
 import com.example.sdk.presentation.models.ViewModeTab
 import com.example.sdk.presentation.themeeditor.PartialThemeEditorScreen
-import com.example.sdk.sdk.CalendarSdk
-import com.example.sdk.sdk.CalendarThemeConfig
-import com.example.sdk.sdk.CalendarThemeExamples
-import com.example.sdk.sdk.CalendarThemePreset
-import com.example.sdk.sdk.CalendarThemeStorage
+import com.example.sdk.sdk.*
 import com.example.sdk.ui.theme.CalendarTheme
 import com.example.sdk.ui.theme.FinancialCalendarTheme
 import com.example.sdk.utils.findActivity
@@ -404,6 +380,7 @@ fun FinancialCalendarView(
                                     calendar = uiState.selectedPeriod,
                                     selectedDay = uiState.selectedDate?.get(java.util.Calendar.DAY_OF_MONTH),
                                     daysData = uiState.daysData,
+                                    categories = uiState.categories,
                                     onDaySelected = { day ->
                                         viewModel.onAction(CalendarUiAction.OnDaySelected(day))
                                     }
@@ -415,6 +392,7 @@ fun FinancialCalendarView(
                                     calendar = uiState.selectedPeriod,
                                     selectedDay = uiState.selectedDate?.get(java.util.Calendar.DAY_OF_MONTH),
                                     daysData = uiState.daysData,
+                                    categories = uiState.categories,
                                     onDaySelected = { day ->
                                         viewModel.onAction(CalendarUiAction.OnDaySelected(day))
                                     }
@@ -425,14 +403,15 @@ fun FinancialCalendarView(
                                 val selectedDay =
                                     uiState.selectedDate?.get(java.util.Calendar.DAY_OF_MONTH)
 
-                                val dayTransactions = selectedDay?.let { day ->
-                                    uiState.daysData[day]?.transactions
+                                val dayOperations = selectedDay?.let { day ->
+                                    uiState.daysData[day]?.operations
                                 } ?: emptyList()
 
                                 DayCalendarGrid(
                                     calendar = uiState.selectedPeriod,
                                     selectedDay = selectedDay,
-                                    transactions = dayTransactions,
+                                    operations = dayOperations,
+                                    categories = uiState.categories,
                                     onDaySelected = { day ->
                                         viewModel.onAction(CalendarUiAction.OnDaySelected(day))
                                     }
@@ -454,8 +433,14 @@ fun FinancialCalendarView(
                     ),
                     containerColor = colors.surface
                 ) {
+                    val selectedDay = uiState.selectedDate?.get(java.util.Calendar.DAY_OF_MONTH)
+                    val dayOperations = selectedDay?.let { day ->
+                        uiState.daysData[day]?.operations
+                    } ?: emptyList()
+
                     DayDetailedBottomSheet(
-                        dayTransactions = uiState.allMonthTransactions,
+                        dayOperations = dayOperations,
+                        categories = uiState.categories,
                         selectedDay = uiState.selectedDate ?: uiState.selectedPeriod,
                         onClickAdd = { viewModel.onAction(CalendarUiAction.OnAddClick) },
                         onClickTransaction = { }
@@ -465,7 +450,11 @@ fun FinancialCalendarView(
 
             if (uiState.isAddTransactionVisible) {
                 AddTransactionBottomSheet(
-                    onDismiss = { viewModel.onAddDismiss() }
+                    categories = uiState.categories,
+                    onDismiss = { viewModel.onAddDismiss() },
+                    onSave = { operation ->
+                        viewModel.saveOperation(operation)
+                    }
                 )
             }
 

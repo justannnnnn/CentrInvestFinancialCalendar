@@ -20,12 +20,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.sdk.domain.model.Category
+import com.example.sdk.domain.model.CalendarCategory
 import com.example.sdk.ui.theme.CalendarTheme
 
 @SuppressLint("DefaultLocale")
 @Composable
-fun StatsCategoryList(categoriesToSum: Map<Category, Long>) {
+fun StatsCategoryList(categoriesToSum: Map<CalendarCategory, Long>) {
     val colors = CalendarTheme.colors
     val typography = CalendarTheme.typography
     val totalExpenses = categoriesToSum.filter { it.key.isIncome.not() }.values.sum()
@@ -45,6 +45,12 @@ fun StatsCategoryList(categoriesToSum: Map<Category, Long>) {
                     (sum.toFloat() / totalExpenses.toFloat() * 100f)
                 }
 
+                val parsedColor = try {
+                    Color(android.graphics.Color.parseColor(category.color))
+                } catch (e: Exception) {
+                    colors.textSecondary
+                }
+
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -60,13 +66,13 @@ fun StatsCategoryList(categoriesToSum: Map<Category, Long>) {
                             modifier = Modifier
                                 .size(40.dp)
                                 .background(
-                                    color = Color(category.color).copy(alpha = 0.12f),
+                                    color = parsedColor.copy(alpha = 0.12f),
                                     shape = RoundedCornerShape(12.dp)
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = category.icon,
+                                text = category.iconUrl, // Assuming iconUrl is used as emoji for now
                                 style = typography.titleMedium
                             )
                         }
@@ -75,7 +81,7 @@ fun StatsCategoryList(categoriesToSum: Map<Category, Long>) {
 
                         Column {
                             Text(
-                                text = category.title,
+                                text = category.name,
                                 style = typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                                 color = colors.textPrimary
                             )
@@ -90,7 +96,7 @@ fun StatsCategoryList(categoriesToSum: Map<Category, Long>) {
                     }
 
                     Text(
-                        text = "${if (!category.isIncome) "- " else ""}${sum.formatSum()} ₽",
+                        text = "${if (!category.isIncome) "- " else ""}${(sum / 100.0).formatSum()} ₽",
                         style = typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                         color = if (category.isIncome) colors.primary else colors.textPrimary
                     )

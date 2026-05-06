@@ -4,21 +4,18 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.sdk.data.network.dto.RecurrenceFrequency
-import com.example.sdk.domain.model.DayData
-import com.example.sdk.domain.model.Transaction
+import com.example.sdk.domain.model.*
 import com.example.sdk.domain.repository.TransactionsRepository
 import com.example.sdk.presentation.models.ViewModeTab
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.flow.asStateFlow
 import java.util.Calendar
 import javax.inject.Inject
 
@@ -32,27 +29,64 @@ class CalendarViewModel @Inject constructor(
         loadStartData()
     }
 
-    private var domainTransactions: List<Transaction> = emptyList()
+    private var domainOperations: List<CalendarOperation> = emptyList()
+    private var domainCategories: List<CalendarCategory> = emptyList()
 
     private fun loadStartData() {
         viewModelScope.launch {
             try {
                 val data = withContext(Dispatchers.IO) {
-                    repo.getAll()
+                    repo.getCalendarData()
                 }
-                domainTransactions = data.mapNotNull { it.toDomain() }
+                
+                domainOperations = data.operations.map { dtoOp ->
+                    CalendarOperation(
+                        id = dtoOp.id,
+                        title = dtoOp.title,
+                        amount = dtoOp.amount,
+                        dateTime = dtoOp.dateTime,
+                        categoryId = dtoOp.categoryId,
+                        isCustom = dtoOp.isCustom,
+                        status = when(dtoOp.status) {
+                            com.example.sdk.data.network.dto.OperationStatus.SUCCESS -> OperationStatus.SUCCESS
+                            com.example.sdk.data.network.dto.OperationStatus.ERROR -> OperationStatus.ERROR
+                            null -> null
+                        },
+                        recurrence = dtoOp.recurrence?.let {
+                            Recurrence(
+                                every = it.every,
+                                unit = when(it.unit) {
+                                    com.example.sdk.data.network.dto.RecurrenceUnit.DAY -> RecurrenceUnit.DAY
+                                    com.example.sdk.data.network.dto.RecurrenceUnit.WEEK -> RecurrenceUnit.WEEK
+                                    com.example.sdk.data.network.dto.RecurrenceUnit.MONTH -> RecurrenceUnit.MONTH
+                                },
+                                time = it.time
+                            )
+                        }
+                    )
+                }
+                domainCategories = data.categories.map { dtoCat ->
+                    CalendarCategory(
+                        id = dtoCat.id,
+                        name = dtoCat.name,
+                        iconUrl = dtoCat.iconUrl,
+                        color = dtoCat.color,
+                        isIncome = dtoCat.isIncome,
+                        amount = dtoCat.amount
+                    )
+                }
+
+                _uiState.update { it.copy(categories = domainCategories) }
+                rebuildMonth()
             } catch (e: Exception) {
                 e.printStackTrace()
-                domainTransactions = emptyList()
             }
-
-            rebuildMonth()
         }
     }
 
     private fun rebuildMonth() {
         val month = uiState.value.selectedPeriod
-        val days = buildCalendar(domainTransactions, month)
+        val days = buildCalendar(domainOperations, month)
 
         _uiState.update {
             it.copy(daysData = days)
@@ -60,7 +94,7 @@ class CalendarViewModel @Inject constructor(
     }
 
     private fun buildCalendar(
-        transactions: List<Transaction>,
+        operations: List<CalendarOperation>,
         monthCalendar: Calendar
     ): Map<Int, DayData> {
         val year = monthCalendar.get(Calendar.YEAR)
@@ -68,40 +102,37 @@ class CalendarViewModel @Inject constructor(
 
         val daysInMonth = monthCalendar.getActualMaximum(Calendar.DAY_OF_MONTH)
         val calendarMap = (1..daysInMonth).associateWith {
-            DayData(day = it, transactions = emptyList(), hasRecurring = false)
+            DayData(day = it, operations = emptyList(), hasRecurring = false)
         }.toMutableMap()
 
-        val now = Calendar.getInstance()
+        operations.forEach { op ->
+            val opCal = Calendar.getInstance().apply { timeInMillis = op.dateTime * 1000 }
 
-        transactions.forEach { tx ->
-            val txCal = tx.date.clone() as Calendar
-
-            if (txCal.get(Calendar.YEAR) == year && txCal.get(Calendar.MONTH) == month) {
-                val day = txCal.get(Calendar.DAY_OF_MONTH)
+            if (opCal.get(Calendar.YEAR) == year && opCal.get(Calendar.MONTH) == month) {
+                val day = opCal.get(Calendar.DAY_OF_MONTH)
                 val old = calendarMap[day]!!
                 calendarMap[day] = old.copy(
-                    transactions = old.transactions + tx,
-                    hasRecurring = old.hasRecurring || (tx.recurrenceRule != null)
+                    operations = old.operations + op,
+                    hasRecurring = old.hasRecurring || (op.recurrence != null)
                 )
             }
 
-            tx.recurrenceRule?.let { rule ->
-                val recurCal = txCal.clone() as Calendar
-                val until =
-                    rule.untilDate ?: Calendar.getInstance().apply { add(Calendar.YEAR, 10) }
-                recurCal.addByFrequency(rule.frequency, rule.interval)
+            op.recurrence?.let { rule ->
+                val recurCal = opCal.clone() as Calendar
+                val until = Calendar.getInstance().apply { add(Calendar.YEAR, 2) }
+                
+                addByRecurrence(recurCal, rule)
 
                 while (!recurCal.after(until)) {
                     if (recurCal.get(Calendar.YEAR) == year && recurCal.get(Calendar.MONTH) == month) {
                         val day = recurCal.get(Calendar.DAY_OF_MONTH)
                         val old = calendarMap[day]!!
                         calendarMap[day] = old.copy(
-                            transactions = old.transactions + tx,
+                            operations = old.operations + op,
                             hasRecurring = true
                         )
                     }
-
-                    recurCal.addByFrequency(rule.frequency, rule.interval)
+                    addByRecurrence(recurCal, rule)
                 }
             }
         }
@@ -109,15 +140,11 @@ class CalendarViewModel @Inject constructor(
         return calendarMap
     }
 
-    private fun Calendar.addByFrequency(
-        frequency: RecurrenceFrequency,
-        interval: Int
-    ) {
-        when (frequency) {
-            RecurrenceFrequency.DAILY -> add(Calendar.DAY_OF_MONTH, interval)
-            RecurrenceFrequency.WEEKLY -> add(Calendar.WEEK_OF_YEAR, interval)
-            RecurrenceFrequency.MONTHLY -> add(Calendar.MONTH, interval)
-            RecurrenceFrequency.YEARLY -> add(Calendar.YEAR, interval)
+    private fun addByRecurrence(cal: Calendar, recurrence: Recurrence) {
+        when (recurrence.unit) {
+            RecurrenceUnit.DAY -> cal.add(Calendar.DAY_OF_MONTH, recurrence.every)
+            RecurrenceUnit.WEEK -> cal.add(Calendar.WEEK_OF_YEAR, recurrence.every)
+            RecurrenceUnit.MONTH -> cal.add(Calendar.MONTH, recurrence.every)
         }
     }
 
@@ -129,7 +156,6 @@ class CalendarViewModel @Inject constructor(
 
     fun onAction(action: CalendarUiAction) {
         when (action) {
-
             CalendarUiAction.OnPrevPeriodClick -> {
                 val interval = when (_uiState.value.selectedViewMode) {
                     ViewModeTab.Day -> Calendar.DAY_OF_MONTH
@@ -143,7 +169,7 @@ class CalendarViewModel @Inject constructor(
                 rebuildMonth()
             }
 
-            CalendarUiAction.OnNextPeriodClick-> {
+            CalendarUiAction.OnNextPeriodClick -> {
                 val interval = when (_uiState.value.selectedViewMode) {
                     ViewModeTab.Day -> Calendar.DAY_OF_MONTH
                     ViewModeTab.Month -> Calendar.MONTH
@@ -188,5 +214,45 @@ class CalendarViewModel @Inject constructor(
 
     fun onAddDismiss() {
         _uiState.update { it.copy(isAddTransactionVisible = false) }
+    }
+
+    fun saveOperation(operation: CalendarOperation) {
+        viewModelScope.launch {
+            try {
+                // Mapping Domain back to DTO for saving
+                val dtoOp = com.example.sdk.data.network.dto.CalendarOperation(
+                    id = operation.id,
+                    title = operation.title,
+                    amount = operation.amount,
+                    dateTime = operation.dateTime,
+                    categoryId = operation.categoryId,
+                    isCustom = operation.isCustom,
+                    status = operation.status?.let {
+                        when(it) {
+                            OperationStatus.SUCCESS -> com.example.sdk.data.network.dto.OperationStatus.SUCCESS
+                            OperationStatus.ERROR -> com.example.sdk.data.network.dto.OperationStatus.ERROR
+                        }
+                    },
+                    recurrence = operation.recurrence?.let {
+                        com.example.sdk.data.network.dto.Recurrence(
+                            every = it.every,
+                            unit = when(it.unit) {
+                                RecurrenceUnit.DAY -> com.example.sdk.data.network.dto.RecurrenceUnit.DAY
+                                RecurrenceUnit.WEEK -> com.example.sdk.data.network.dto.RecurrenceUnit.WEEK
+                                RecurrenceUnit.MONTH -> com.example.sdk.data.network.dto.RecurrenceUnit.MONTH
+                            },
+                            time = it.time
+                        )
+                    }
+                )
+                withContext(Dispatchers.IO) {
+                    repo.addOperation(dtoOp)
+                }
+                _uiState.update { it.copy(isAddTransactionVisible = false) }
+                loadStartData() // Reload to show new data
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 }

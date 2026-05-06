@@ -25,15 +25,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.example.sdk.domain.model.Category
+import com.example.sdk.domain.model.CalendarCategory
 import com.example.sdk.ui.theme.CalendarTheme
 
 @Composable
 fun AddTransactionCategorySection(
-    selectedCategory: Category,
+    categories: List<CalendarCategory>,
+    selectedCategory: CalendarCategory?,
     expanded: Boolean,
     onToggleExpanded: () -> Unit,
-    onCategorySelected: (Category) -> Unit
+    onCategorySelected: (CalendarCategory) -> Unit
 ) {
     SectionLabel(text = "Категория")
 
@@ -54,6 +55,7 @@ fun AddTransactionCategorySection(
             Spacer(modifier = Modifier.height(8.dp))
 
             CategoryDropdownCard(
+                categories = categories,
                 selectedCategory = selectedCategory,
                 onSelect = onCategorySelected
             )
@@ -63,7 +65,7 @@ fun AddTransactionCategorySection(
 
 @Composable
 private fun CategorySelectorField(
-    selectedCategory: Category,
+    selectedCategory: CalendarCategory?,
     expanded: Boolean,
     onToggle: () -> Unit
 ) {
@@ -86,7 +88,7 @@ private fun CategorySelectorField(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = selectedCategory.icon,
+                text = selectedCategory?.iconUrl ?: "❓",
                 style = typography.bodyMedium
             )
         }
@@ -94,9 +96,9 @@ private fun CategorySelectorField(
         Spacer(modifier = Modifier.width(12.dp))
 
         Text(
-            text = selectedCategory.title,
+            text = selectedCategory?.name ?: "Выберите категорию",
             style = typography.bodyLarge,
-            color = colors.textPrimary,
+            color = if (selectedCategory == null) colors.textSecondary else colors.textPrimary,
             modifier = Modifier.weight(1f)
         )
 
@@ -110,8 +112,9 @@ private fun CategorySelectorField(
 
 @Composable
 private fun CategoryDropdownCard(
-    selectedCategory: Category,
-    onSelect: (Category) -> Unit
+    categories: List<CalendarCategory>,
+    selectedCategory: CalendarCategory?,
+    onSelect: (CalendarCategory) -> Unit
 ) {
     val colors = CalendarTheme.colors
     val typography = CalendarTheme.typography
@@ -122,8 +125,8 @@ private fun CategoryDropdownCard(
             .background(colors.surface, RoundedCornerShape(18.dp))
             .border(1.dp, colors.borderLight, RoundedCornerShape(18.dp))
     ) {
-        AddTransactionConstants.categories.forEachIndexed { index, item ->
-            val isSelected = item.category == selectedCategory
+        categories.forEachIndexed { index, category ->
+            val isSelected = category.id == selectedCategory?.id
 
             Row(
                 modifier = Modifier
@@ -131,7 +134,7 @@ private fun CategoryDropdownCard(
                     .background(
                         if (isSelected) colors.selectedBackground else Color.Transparent
                     )
-                    .clickable { onSelect(item.category) }
+                    .clickable { onSelect(category) }
                     .padding(horizontal = 14.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -145,7 +148,7 @@ private fun CategoryDropdownCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = item.category.icon,
+                        text = category.iconUrl,
                         style = typography.bodyMedium
                     )
                 }
@@ -153,7 +156,7 @@ private fun CategoryDropdownCard(
                 Spacer(modifier = Modifier.width(12.dp))
 
                 Text(
-                    text = item.category.title,
+                    text = category.name,
                     style = typography.bodyLarge,
                     color = colors.textPrimary,
                     modifier = Modifier.weight(1f)
@@ -168,7 +171,7 @@ private fun CategoryDropdownCard(
                 }
             }
 
-            if (index != AddTransactionConstants.categories.lastIndex) {
+            if (index != categories.lastIndex) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()

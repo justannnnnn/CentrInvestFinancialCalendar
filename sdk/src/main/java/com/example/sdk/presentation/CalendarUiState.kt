@@ -3,7 +3,8 @@ package com.example.sdk.presentation
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.example.sdk.domain.model.DayData
-import com.example.sdk.domain.model.Transaction
+import com.example.sdk.domain.model.CalendarOperation
+import com.example.sdk.domain.model.CalendarCategory
 import com.example.sdk.presentation.models.ViewModeTab
 import java.util.Calendar
 
@@ -12,14 +13,15 @@ data class CalendarUiState(
     val selectedPeriod: Calendar = Calendar.getInstance(),
     val selectedDate: Calendar? = null,
     val daysData: Map<Int, DayData> = emptyMap(),
+    val categories: List<CalendarCategory> = emptyList(),
     val viewModeTabs: List<ViewModeTab> =
         listOf(ViewModeTab.Month, ViewModeTab.Week, ViewModeTab.Day),
     val selectedViewMode: ViewModeTab = ViewModeTab.Month,
     val showBottomSheet: Boolean = false,
     val isAddTransactionVisible: Boolean = false
 ) {
-    val allMonthTransactions: List<Transaction>
-        get() = daysData.values.flatMap { it.transactions }
+    val allMonthTransactions: List<CalendarOperation>
+        get() = daysData.values.flatMap { it.operations }
 }
 
 sealed interface CalendarUiAction {

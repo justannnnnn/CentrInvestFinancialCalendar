@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,15 +13,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.sdk.R
+import com.example.sdk.domain.model.CalendarCategory
 import com.example.sdk.domain.model.DayData
 import com.example.sdk.presentation.statistics.formatSum
 import com.example.sdk.ui.theme.CalendarTheme
@@ -33,11 +34,12 @@ fun WeekCalendarGrid(
     calendar: Calendar,
     selectedDay: Int?,
     daysData: Map<Int, DayData>,
+    categories: List<CalendarCategory>,
     onDaySelected: (Int) -> Unit,
 ) {
     val colors = CalendarTheme.colors
     val typography = CalendarTheme.typography
-    val weekDays = getWeekDays(calendar, daysData)
+    val weekDays = getWeekDays(calendar, daysData, categories)
     val weekTotal = weekDays.sumOf { it.amount }
 
     LazyColumn(
@@ -60,7 +62,7 @@ fun WeekCalendarGrid(
                     color = colors.textSecondary
                 )
                 Text(
-                    text = "${weekTotal.formatSum()} ₽",
+                    text = "${(weekTotal / 100.0).formatSum()} ₽",
                     style = typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     color = if (weekTotal < 0) colors.expense else colors.primary
                 )
@@ -77,8 +79,8 @@ fun WeekCalendarGrid(
                         dayItem = dayItem,
                         isSelected = selectedDay == dayItem.day,
                         onClick = { onDaySelected(dayItem.day) },
-                        hasOperations = daysData[dayItem.day]?.transactions
-                            ?.any { it.isPlanned.not() } == true,
+                        hasOperations = daysData[dayItem.day]?.operations
+                            ?.any { !it.isCustom } == true,
                         hasRecurring = daysData[dayItem.day]?.hasRecurring == true,
                         modifier = Modifier.weight(1f)
                     )
@@ -96,8 +98,8 @@ fun WeekCalendarGrid(
                         dayItem = dayItem,
                         isSelected = selectedDay == dayItem.day,
                         onClick = { onDaySelected(dayItem.day) },
-                        hasOperations = daysData[dayItem.day]?.transactions
-                            ?.any { it.isPlanned.not() } == true,
+                        hasOperations = daysData[dayItem.day]?.operations
+                            ?.any { !it.isCustom } == true,
                         hasRecurring = daysData[dayItem.day]?.hasRecurring == true,
                         modifier = Modifier.weight(1f)
                     )
@@ -123,12 +125,12 @@ private fun WeekDayCard(
         modifier = modifier
             .height(120.dp)
             .fillMaxWidth()
-            .clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(if (isSelected) colors.selectedBackground else colors.surface)
             .border(
                 width = 2.dp,
                 color = if (isSelected) colors.selectedBorder else colors.borderLight,
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(16.dp)
             )
             .clickable { onClick() }
             .padding(12.dp),
@@ -171,7 +173,7 @@ private fun WeekDayCard(
         }
 
         Text(
-            text = dayItem.amount.formatSum(),
+            text = (dayItem.amount / 100.0).formatSum(),
             style = typography.labelSmall,
             color = if (dayItem.amount < 0) colors.expense else colors.primary
         )
@@ -186,7 +188,8 @@ private data class WeekDayItem(
 
 private fun getWeekDays(
     calendar: Calendar,
-    daysData: Map<Int, DayData>
+    daysData: Map<Int, DayData>,
+    categories: List<CalendarCategory>
 ): List<WeekDayItem> {
     val weekDays = mutableListOf<WeekDayItem>()
     val daysOfWeek = listOf("Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс")
@@ -200,8 +203,11 @@ private fun getWeekDays(
             WeekDayItem(
                 day = day,
                 dayOfWeek = daysOfWeek[index],
-                amount = daysData[day]?.transactions
-                    ?.sumOf { if (it.category?.isIncome == true) it.amount else -it.amount } ?: 0
+                amount = daysData[day]?.operations
+                    ?.sumOf { op ->
+                        val isIncome = categories.find { it.id == op.categoryId }?.isIncome == true
+                        if (isIncome) op.amount else -op.amount
+                    } ?: 0
             )
         )
         calendarCopy.add(Calendar.DAY_OF_MONTH, 1)

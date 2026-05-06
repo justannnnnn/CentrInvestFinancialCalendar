@@ -1,9 +1,9 @@
 package com.example.sdk.presentation.add
 
-import com.example.sdk.domain.model.Category
+import com.example.sdk.domain.model.CalendarCategory
 
 data class AddTransactionUiState(
-    val selectedCategory: Category = Category.SHOPPING,
+    val selectedCategory: CalendarCategory? = null,
     val isCategoryExpanded: Boolean = false,
     val description: String = "",
     val amount: String = "0",

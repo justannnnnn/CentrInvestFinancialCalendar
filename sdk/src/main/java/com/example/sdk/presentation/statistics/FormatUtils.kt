@@ -8,3 +8,10 @@ fun Long.formatSum(): String {
         .getNumberInstance(Locale("ru", "RU"))
         .format(this)
 }
+
+fun Double.formatSum(): String {
+    val formatter = NumberFormat.getNumberInstance(Locale("ru", "RU"))
+    formatter.minimumFractionDigits = 0
+    formatter.maximumFractionDigits = 2
+    return formatter.format(this)
+}

@@ -3,17 +3,7 @@ package com.example.sdk.presentation
 import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -26,7 +16,8 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.sdk.domain.model.Transaction
+import com.example.sdk.domain.model.CalendarCategory
+import com.example.sdk.domain.model.CalendarOperation
 import com.example.sdk.presentation.components.IconWrapper
 import com.example.sdk.presentation.statistics.formatSum
 import com.example.sdk.ui.theme.CalendarTheme
@@ -37,10 +28,11 @@ import java.util.Calendar
 @SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
 fun DayDetailedBottomSheet(
-    dayTransactions: List<Transaction>,
+    dayOperations: List<CalendarOperation>,
+    categories: List<CalendarCategory>,
     selectedDay: Calendar,
     onClickAdd: () -> Unit,
-    onClickTransaction: () -> Unit
+    onClickTransaction: (CalendarOperation) -> Unit
 ) {
     val colors = CalendarTheme.colors
     val typography = CalendarTheme.typography
@@ -71,32 +63,26 @@ fun DayDetailedBottomSheet(
         )
 
         DayStats(
-            transactionCount = dayTransactions.size,
-            dayBalance = dayTransactions.sumOf {
-                if (it.category.isIncome == true) it.amount else -it.amount
+            operationCount = dayOperations.size,
+            dayBalance = dayOperations.sumOf { op ->
+                val category = categories.find { it.id == op.categoryId }
+                if (category?.isIncome == true) op.amount else -op.amount
             }
         )
 
-        if (dayTransactions.isEmpty()) {
+        if (dayOperations.isEmpty()) {
             EmptyBottomSheetState()
         } else {
-            dayTransactions.forEach { transaction ->
-                transaction.category.let {
-                    val title = if (transaction.note.isNullOrEmpty()) {
-                        it.title
-                    } else {
-                        transaction.note
-                    }
-
-                    TransactionItem(
-                        icon = it.icon,
-                        name = title,
-                        category = it.title,
-                        amount = transaction.amount * (if (it.isIncome.not()) -1 else 1),
-                        color = it.color,
-                        onClickTransaction = onClickTransaction
-                    )
-                }
+            dayOperations.forEach { operation ->
+                val category = categories.find { it.id == operation.categoryId }
+                TransactionItem(
+                    icon = category?.iconUrl ?: "❓",
+                    name = operation.title,
+                    category = category?.name ?: "Unknown",
+                    amount = operation.amount * (if (category?.isIncome == false) -1 else 1),
+                    color = category?.color ?: "#808080",
+                    onClickTransaction = { onClickTransaction(operation) }
+                )
             }
         }
 
@@ -110,11 +96,16 @@ private fun TransactionItem(
     name: String,
     category: String,
     amount: Long,
-    color: Long,
+    color: String,
     onClickTransaction: () -> Unit
 ) {
     val colors = CalendarTheme.colors
     val typography = CalendarTheme.typography
+    val parsedColor = try {
+        Color(android.graphics.Color.parseColor(color))
+    } catch (e: Exception) {
+        colors.textSecondary
+    }
 
     Row(
         modifier = Modifier
@@ -132,7 +123,7 @@ private fun TransactionItem(
                 modifier = Modifier
                     .size(48.dp)
                     .background(
-                        color = Color(color).copy(alpha = 0.12f),
+                        color = parsedColor.copy(alpha = 0.12f),
                         shape = RoundedCornerShape(16.dp)
                     ),
                 contentAlignment = Alignment.Center
@@ -162,7 +153,7 @@ private fun TransactionItem(
         }
 
         Text(
-            text = "${amount.formatSum()} ₽",
+            text = "${(amount / 100.0).formatSum()} ₽",
             style = typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
             color = if (amount < 0) colors.textPrimary else colors.primary
         )
@@ -225,7 +216,7 @@ private fun PlusButton(onClick: () -> Unit) {
 
 @Composable
 private fun DayStats(
-    transactionCount: Int,
+    operationCount: Int,
     dayBalance: Long
 ) {
     val colors = CalendarTheme.colors
@@ -242,13 +233,13 @@ private fun DayStats(
         Text(
             text = LocalContext.current.getQuantityStringRu(
                 com.example.sdk.R.plurals.number_of_operations,
-                transactionCount
+                operationCount
             ),
             style = typography.bodyMedium,
             color = colors.textSecondary
         )
         Text(
-            text = "${dayBalance.formatSum()} ₽",
+            text = "${(dayBalance / 100.0).formatSum()} ₽",
             style = typography.titleMedium.copy(fontWeight = FontWeight.Bold),
             color = if (dayBalance < 0) colors.expense else colors.income
         )

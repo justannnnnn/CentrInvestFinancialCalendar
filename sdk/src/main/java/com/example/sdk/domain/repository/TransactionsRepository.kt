@@ -1,8 +1,9 @@
 package com.example.sdk.domain.repository
 
-import com.example.sdk.data.network.dto.TransactionDto
+import com.example.sdk.data.network.dto.CalendarOperation
+import com.example.sdk.data.network.dto.FinancialCalendarInput
 
 interface TransactionsRepository {
-    suspend fun getAll(): List<TransactionDto>
-    suspend fun add(transaction: TransactionDto)
+    suspend fun getCalendarData(): FinancialCalendarInput
+    suspend fun addOperation(operation: CalendarOperation)
 }

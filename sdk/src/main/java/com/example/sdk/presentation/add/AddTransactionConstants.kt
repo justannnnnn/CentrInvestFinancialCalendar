@@ -1,23 +1,15 @@
 package com.example.sdk.presentation.add
 
-import com.example.sdk.domain.model.Category
+import com.example.sdk.domain.model.CalendarCategory
 
 data class AddCategoryUi(
-    val category: Category,
+    val category: CalendarCategory,
     val subtitle: String? = null
 )
 
 object AddTransactionConstants {
-    val categories: List<AddCategoryUi> = listOf(
-        AddCategoryUi(Category.SHOPPING),
-        AddCategoryUi(Category.HOUSE),
-        AddCategoryUi(Category.GROCERIES),
-        AddCategoryUi(Category.TRANSPORT),
-        AddCategoryUi(Category.ENTERTAINMENT),
-        AddCategoryUi(Category.WORK),
-        AddCategoryUi(Category.HEALTH)
-    )
-
+    // This list should ideally be dynamic from the repository.
+    // Keeping it empty or as a placeholder if needed, but it's better to use UI state.
     val recurringUnits: List<String> = listOf(
         "дней",
         "недель",

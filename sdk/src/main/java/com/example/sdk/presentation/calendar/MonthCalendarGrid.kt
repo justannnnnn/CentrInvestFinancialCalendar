@@ -3,17 +3,7 @@ package com.example.sdk.presentation.calendar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.rememberScrollState
@@ -27,19 +17,22 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.sdk.data.network.dto.TransactionType
+import com.example.sdk.domain.model.CalendarCategory
+import com.example.sdk.domain.model.CalendarOperation
 import com.example.sdk.domain.model.DayData
 import com.example.sdk.presentation.statistics.DonutChartWithStats
 import com.example.sdk.presentation.statistics.StatsCategoryList
 import com.example.sdk.presentation.statistics.StatsSummaryBlock
 import com.example.sdk.ui.theme.CalendarTheme
 import java.util.Calendar
+import kotlin.math.abs
 
 @Composable
 fun MonthCalendarGrid(
     calendar: Calendar,
     selectedDay: Int?,
     daysData: Map<Int, DayData>,
+    categories: List<CalendarCategory>,
     onDaySelected: (Int) -> Unit
 ) {
     val year = calendar.get(Calendar.YEAR)
@@ -51,12 +44,16 @@ fun MonthCalendarGrid(
     }
     val firstDayOffset = (firstDayOfMonth.get(Calendar.DAY_OF_WEEK) - Calendar.MONDAY + 7) % 7
 
-    val allTransactions = daysData.values
-        .flatMap { it.transactions }
+    val allOperations = daysData.values
+        .flatMap { it.operations }
         .filter { it.amount != 0L }
 
-    val categoriesToSum = allTransactions
-        .map { it.category to it.amount }
+    // Map operations to their categories for statistics
+    val categoriesToSum = allOperations
+        .mapNotNull { op ->
+            val category = categories.find { it.id == op.categoryId }
+            category?.let { it to op.amount }
+        }
         .groupingBy { it.first }
         .fold(0L) { acc, pair -> acc + pair.second }
 
@@ -75,13 +72,12 @@ fun MonthCalendarGrid(
             onDaySelected = onDaySelected
         )
 
+        val incomeSum = allOperations.filter { it.amount > 0 }.sumOf { it.amount }
+        val expenseSum = allOperations.filter { it.amount < 0 }.sumOf { abs(it.amount) }
+
         StatsSummaryBlock(
-            incomeSum = allTransactions
-                .filter { it.type == TransactionType.INCOME }
-                .sumOf { it.amount },
-            expenseSum = allTransactions
-                .filter { it.type == TransactionType.EXPENSE }
-                .sumOf { it.amount }
+            incomeSum = incomeSum / 100,
+            expenseSum = expenseSum / 100
         )
 
         Divider()
@@ -89,7 +85,7 @@ fun MonthCalendarGrid(
         DonutChartWithStats(categoriesToSum = categoriesToSum)
         StatsCategoryList(categoriesToSum = categoriesToSum)
 
-        MonthTransactionsFallback(transactionsCount = allTransactions.size)
+        MonthTransactionsFallback(transactionsCount = allOperations.size)
     }
 }
 
@@ -122,7 +118,7 @@ private fun CalendarGrid(
             DayCell(
                 day = day,
                 isSelected = selectedDay == day,
-                hasOperations = daysData[day]?.transactions?.any { it.isPlanned.not() } == true,
+                hasOperations = daysData[day]?.operations?.any { !it.isCustom } == true,
                 hasRecurring = daysData[day]?.hasRecurring == true,
                 onClick = { onDaySelected(day) }
             )

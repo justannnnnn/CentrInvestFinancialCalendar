@@ -2,15 +2,7 @@ package com.example.sdk.presentation.calendar
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,9 +14,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.sdk.domain.model.Transaction
+import com.example.sdk.domain.model.CalendarCategory
+import com.example.sdk.domain.model.CalendarOperation
+import com.example.sdk.presentation.statistics.formatSum
 import com.example.sdk.ui.theme.CalendarTheme
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -35,7 +30,8 @@ import kotlin.math.abs
 fun DayCalendarGrid(
     calendar: Calendar,
     selectedDay: Int?,
-    transactions: List<Transaction>,
+    operations: List<CalendarOperation>,
+    categories: List<CalendarCategory>,
     onDaySelected: (Int) -> Unit
 ) {
     val colors = CalendarTheme.colors
@@ -50,24 +46,21 @@ fun DayCalendarGrid(
     val formattedDate = dateFormat.format(selectedDateCalendar.time)
         .replaceFirstChar { it.uppercase() }
 
-    val income = transactions
+    val income = operations
         .filter { it.amount > 0 }
         .sumOf { it.amount.toDouble() }
 
-    val expenseAbs = transactions
+    val expenseAbs = operations
         .filter { it.amount < 0 }
         .sumOf { abs(it.amount.toDouble()) }
 
-    val categoryMap: List<Pair<String, Double>> = transactions
+    val categorySummary = operations
         .filter { it.amount < 0 }
-        .groupBy { transaction ->
-            transaction.category.toString()
-        }
-        .mapValues { (_, list) ->
-            list.sumOf { abs(it.amount.toDouble()) }
-        }
+        .mapNotNull { op -> categories.find { it.id == op.categoryId }?.let { it to op.amount } }
+        .groupBy { it.first }
+        .mapValues { it.value.sumOf { pair -> abs(pair.second.toDouble()) } }
         .toList()
-        .sortedByDescending { (_, amount) -> amount }
+        .sortedByDescending { it.second }
         .take(3)
 
     LazyColumn(
@@ -89,7 +82,7 @@ fun DayCalendarGrid(
                 )
 
                 Text(
-                    text = "${transactions.size} ${getOperationWord(transactions.size)}",
+                    text = "${operations.size} ${getOperationWord(operations.size)}",
                     style = typography.bodyMedium,
                     color = colors.textSecondary,
                     modifier = Modifier.padding(top = 4.dp)
@@ -125,7 +118,7 @@ fun DayCalendarGrid(
                             color = colors.surface.copy(alpha = 0.8f)
                         )
                         Text(
-                            text = "+${formatAmount(income)} ₽",
+                            text = "+${(income / 100.0).formatSum()} ₽",
                             style = typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                             color = colors.surface
                         )
@@ -155,7 +148,7 @@ fun DayCalendarGrid(
                             color = colors.surface.copy(alpha = 0.8f)
                         )
                         Text(
-                            text = "-${formatAmount(expenseAbs)} ₽",
+                            text = "-${(expenseAbs / 100.0).formatSum()} ₽",
                             style = typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                             color = colors.surface
                         )
@@ -164,7 +157,7 @@ fun DayCalendarGrid(
             }
         }
 
-        if (categoryMap.isNotEmpty() && expenseAbs > 0.0) {
+        if (categorySummary.isNotEmpty() && expenseAbs > 0.0) {
             item {
                 Text(
                     text = "Топ категорий",
@@ -174,9 +167,8 @@ fun DayCalendarGrid(
                 )
             }
 
-            items(categoryMap) { (category, amount) ->
+            items(categorySummary) { (category, amount) ->
                 val percentage = ((amount / expenseAbs) * 100.0).toFloat().coerceIn(0f, 100f)
-                val categoryInfo = getCategoryInfo(category)
 
                 Card(
                     modifier = Modifier
@@ -201,19 +193,19 @@ fun DayCalendarGrid(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = categoryInfo.icon,
+                                    text = category.iconUrl,
                                     style = typography.titleMedium,
                                     modifier = Modifier.padding(end = 8.dp)
                                 )
                                 Text(
-                                    text = categoryInfo.name,
+                                    text = category.name,
                                     style = typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                                     color = colors.textPrimary
                                 )
                             }
 
                             Text(
-                                text = "${formatAmount(amount)} ₽",
+                                text = "${(amount / 100.0).formatSum()} ₽",
                                 style = typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                                 color = colors.textPrimary
                             )
@@ -250,7 +242,7 @@ fun DayCalendarGrid(
             )
         }
 
-        if (transactions.isEmpty()) {
+        if (operations.isEmpty()) {
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -272,8 +264,9 @@ fun DayCalendarGrid(
                 }
             }
         } else {
-            items(transactions) { transaction ->
-                SimpleTransactionItem(transaction = transaction)
+            items(operations) { operation ->
+                val category = categories.find { it.id == operation.categoryId }
+                SimpleTransactionItem(operation = operation, category = category)
             }
         }
 
@@ -285,13 +278,12 @@ fun DayCalendarGrid(
 
 @Composable
 private fun SimpleTransactionItem(
-    transaction: Transaction
+    operation: CalendarOperation,
+    category: CalendarCategory?
 ) {
     val colors = CalendarTheme.colors
     val typography = CalendarTheme.typography
-    val categoryName = transaction.category.toString()
-    val categoryInfo = getCategoryInfo(categoryName)
-    val isExpense = transaction.amount < 0
+    val isExpense = operation.amount < 0
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -317,7 +309,7 @@ private fun SimpleTransactionItem(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = categoryInfo.icon,
+                        text = category?.iconUrl ?: "❓",
                         style = typography.titleMedium
                     )
                 }
@@ -326,13 +318,13 @@ private fun SimpleTransactionItem(
                     modifier = Modifier.padding(start = 12.dp)
                 ) {
                     Text(
-                        text = transaction.note ?: categoryInfo.name,
+                        text = operation.title,
                         style = typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                         color = colors.textPrimary
                     )
 
                     Text(
-                        text = categoryInfo.name,
+                        text = category?.name ?: "Unknown",
                         style = typography.bodySmall,
                         color = colors.textSecondary
                     )
@@ -341,22 +333,14 @@ private fun SimpleTransactionItem(
 
             Text(
                 text = if (isExpense) {
-                    "- ${formatAmount(abs(transaction.amount.toDouble()))} ₽"
+                    "- ${(abs(operation.amount.toDouble()) / 100.0).formatSum()} ₽"
                 } else {
-                    "+ ${formatAmount(transaction.amount.toDouble())} ₽"
+                    "+ ${(operation.amount.toDouble() / 100.0).formatSum()} ₽"
                 },
                 style = typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
                 color = if (isExpense) colors.textPrimary else colors.primary
             )
         }
-    }
-}
-
-private fun formatAmount(value: Double): String {
-    return if (value % 1.0 == 0.0) {
-        value.toInt().toString()
-    } else {
-        String.format(Locale("ru"), "%.2f", value)
     }
 }
 
@@ -367,21 +351,3 @@ private fun getOperationWord(count: Int): String {
         else -> "операций"
     }
 }
-
-private fun getCategoryInfo(category: String): CategoryInfo {
-    return when (category.lowercase()) {
-        "продукты" -> CategoryInfo("🛒", "Продукты")
-        "транспорт" -> CategoryInfo("🚕", "Транспорт")
-        "покупки" -> CategoryInfo("💳", "Покупки")
-        "развлечения" -> CategoryInfo("🎉", "Развлечения")
-        "кафе", "рестораны", "еда" -> CategoryInfo("🍽️", "Еда")
-        "здоровье" -> CategoryInfo("💊", "Здоровье")
-        "подписки" -> CategoryInfo("🔁", "Подписки")
-        else -> CategoryInfo("📦", category)
-    }
-}
-
-private data class CategoryInfo(
-    val icon: String,
-    val name: String
-)

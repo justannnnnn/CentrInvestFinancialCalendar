@@ -20,12 +20,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.sdk.R
-import com.example.sdk.domain.model.Category
+import com.example.sdk.domain.model.CalendarCategory
 import com.example.sdk.presentation.utils.AutoSizeText
 import com.example.sdk.ui.theme.CalendarTheme
 
 @Composable
-fun DonutChartWithStats(categoriesToSum: Map<Category, Long>) {
+fun DonutChartWithStats(categoriesToSum: Map<CalendarCategory, Long>) {
     val colors = CalendarTheme.colors
     val typography = CalendarTheme.typography
     val expenseCategories = categoriesToSum.filter { it.key.isIncome.not() }
@@ -40,9 +40,14 @@ fun DonutChartWithStats(categoriesToSum: Map<Category, Long>) {
     if (totalExpenses > 0) {
         expenseCategories.forEach { (category, sum) ->
             val sweepAngle = (sum.toFloat() / totalExpenses.toFloat()) * 360f
+            val parsedColor = try {
+                Color(android.graphics.Color.parseColor(category.color))
+            } catch (e: Exception) {
+                colors.textSecondary
+            }
             segments.add(
                 DonutSegment(
-                    color = Color(category.color),
+                    color = parsedColor,
                     startAngle = startAngle,
                     sweepAngle = sweepAngle,
                     category = category
@@ -94,7 +99,7 @@ fun DonutChartWithStats(categoriesToSum: Map<Category, Long>) {
                     color = colors.textSecondary
                 )
                 AutoSizeText(
-                    text = "${balance.formatSum()} ₽",
+                    text = "${(balance / 100.0).formatSum()} ₽",
                     maxTextSize = 18.sp,
                     minTextSize = 12.sp,
                     maxLines = 1,

@@ -53,7 +53,7 @@ fun AddTransactionPreviewCard(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "🛒",
+                    text = "💳",
                     style = typography.bodyMedium
                 )
             }
