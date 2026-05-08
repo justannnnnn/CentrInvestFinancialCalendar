@@ -8,7 +8,6 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,16 +24,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.example.sdk.domain.model.CalendarCategory
+import com.example.sdk.domain.model.CalendarCategoryUi
 import com.example.sdk.ui.theme.CalendarTheme
 
 @Composable
 fun AddTransactionCategorySection(
-    categories: List<CalendarCategory>,
-    selectedCategory: CalendarCategory?,
+    categories: List<CalendarCategoryUi>,
+    selectedCategory: CalendarCategoryUi?,
     expanded: Boolean,
     onToggleExpanded: () -> Unit,
-    onCategorySelected: (CalendarCategory) -> Unit
+    onCategorySelected: (CalendarCategoryUi) -> Unit
 ) {
     SectionLabel(text = "Категория")
 
@@ -65,7 +64,7 @@ fun AddTransactionCategorySection(
 
 @Composable
 private fun CategorySelectorField(
-    selectedCategory: CalendarCategory?,
+    selectedCategory: CalendarCategoryUi?,
     expanded: Boolean,
     onToggle: () -> Unit
 ) {
@@ -112,9 +111,9 @@ private fun CategorySelectorField(
 
 @Composable
 private fun CategoryDropdownCard(
-    categories: List<CalendarCategory>,
-    selectedCategory: CalendarCategory?,
-    onSelect: (CalendarCategory) -> Unit
+    categories: List<CalendarCategoryUi>,
+    selectedCategory: CalendarCategoryUi?,
+    onSelect: (CalendarCategoryUi) -> Unit
 ) {
     val colors = CalendarTheme.colors
     val typography = CalendarTheme.typography

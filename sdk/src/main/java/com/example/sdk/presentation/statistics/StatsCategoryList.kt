@@ -20,12 +20,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.sdk.domain.model.CalendarCategory
+import com.example.sdk.domain.model.CalendarCategoryUi
 import com.example.sdk.ui.theme.CalendarTheme
 
 @SuppressLint("DefaultLocale")
 @Composable
-fun StatsCategoryList(categoriesToSum: Map<CalendarCategory, Long>) {
+fun StatsCategoryList(categoriesToSum: Map<CalendarCategoryUi, Long>) {
     val colors = CalendarTheme.colors
     val typography = CalendarTheme.typography
     val totalExpenses = categoriesToSum.filter { it.key.isIncome.not() }.values.sum()

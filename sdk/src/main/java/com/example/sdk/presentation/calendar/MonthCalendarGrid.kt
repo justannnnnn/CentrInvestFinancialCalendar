@@ -17,8 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.sdk.domain.model.CalendarCategory
-import com.example.sdk.domain.model.CalendarOperation
+import com.example.sdk.domain.model.CalendarCategoryUi
 import com.example.sdk.domain.model.DayData
 import com.example.sdk.presentation.statistics.DonutChartWithStats
 import com.example.sdk.presentation.statistics.StatsCategoryList
@@ -32,7 +31,7 @@ fun MonthCalendarGrid(
     calendar: Calendar,
     selectedDay: Int?,
     daysData: Map<Int, DayData>,
-    categories: List<CalendarCategory>,
+    categories: List<CalendarCategoryUi>,
     onDaySelected: (Int) -> Unit
 ) {
     val year = calendar.get(Calendar.YEAR)
@@ -46,7 +45,7 @@ fun MonthCalendarGrid(
 
     val allOperations = daysData.values
         .flatMap { it.operations }
-        .filter { it.amount != 0L }
+        .filter { it.amount != 0.0 }
 
     // Map operations to their categories for statistics
     val categoriesToSum = allOperations
@@ -55,7 +54,7 @@ fun MonthCalendarGrid(
             category?.let { it to op.amount }
         }
         .groupingBy { it.first }
-        .fold(0L) { acc, pair -> acc + pair.second }
+        .fold(0L) { acc, pair -> acc + pair.second.toLong() }
 
     Column(
         modifier = Modifier
@@ -76,8 +75,8 @@ fun MonthCalendarGrid(
         val expenseSum = allOperations.filter { it.amount < 0 }.sumOf { abs(it.amount) }
 
         StatsSummaryBlock(
-            incomeSum = incomeSum / 100,
-            expenseSum = expenseSum / 100
+            incomeSum = incomeSum.toLong(),
+            expenseSum = expenseSum.toLong()
         )
 
         Divider()

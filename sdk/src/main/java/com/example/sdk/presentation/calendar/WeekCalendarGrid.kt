@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,7 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.sdk.R
-import com.example.sdk.domain.model.CalendarCategory
+import com.example.sdk.domain.model.CalendarCategoryUi
 import com.example.sdk.domain.model.DayData
 import com.example.sdk.presentation.statistics.formatSum
 import com.example.sdk.ui.theme.CalendarTheme
@@ -34,7 +33,7 @@ fun WeekCalendarGrid(
     calendar: Calendar,
     selectedDay: Int?,
     daysData: Map<Int, DayData>,
-    categories: List<CalendarCategory>,
+    categories: List<CalendarCategoryUi>,
     onDaySelected: (Int) -> Unit,
 ) {
     val colors = CalendarTheme.colors
@@ -189,7 +188,7 @@ private data class WeekDayItem(
 private fun getWeekDays(
     calendar: Calendar,
     daysData: Map<Int, DayData>,
-    categories: List<CalendarCategory>
+    categories: List<CalendarCategoryUi>
 ): List<WeekDayItem> {
     val weekDays = mutableListOf<WeekDayItem>()
     val daysOfWeek = listOf("Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс")
@@ -203,11 +202,11 @@ private fun getWeekDays(
             WeekDayItem(
                 day = day,
                 dayOfWeek = daysOfWeek[index],
-                amount = daysData[day]?.operations
+                amount = (daysData[day]?.operations
                     ?.sumOf { op ->
                         val isIncome = categories.find { it.id == op.categoryId }?.isIncome == true
                         if (isIncome) op.amount else -op.amount
-                    } ?: 0
+                    } ?: 0).toLong()
             )
         )
         calendarCopy.add(Calendar.DAY_OF_MONTH, 1)

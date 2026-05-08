@@ -20,12 +20,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.sdk.R
-import com.example.sdk.domain.model.CalendarCategory
+import com.example.sdk.domain.model.CalendarCategoryUi
 import com.example.sdk.presentation.utils.AutoSizeText
 import com.example.sdk.ui.theme.CalendarTheme
 
 @Composable
-fun DonutChartWithStats(categoriesToSum: Map<CalendarCategory, Long>) {
+fun DonutChartWithStats(categoriesToSum: Map<CalendarCategoryUi, Long>) {
     val colors = CalendarTheme.colors
     val typography = CalendarTheme.typography
     val expenseCategories = categoriesToSum.filter { it.key.isIncome.not() }

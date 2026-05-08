@@ -14,11 +14,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.sdk.domain.model.CalendarCategory
-import com.example.sdk.domain.model.CalendarOperation
+import com.example.sdk.domain.model.CalendarCategoryUi
+import com.example.sdk.domain.model.CalendarOperationUi
 import com.example.sdk.presentation.statistics.formatSum
 import com.example.sdk.ui.theme.CalendarTheme
 import java.text.SimpleDateFormat
@@ -30,8 +29,8 @@ import kotlin.math.abs
 fun DayCalendarGrid(
     calendar: Calendar,
     selectedDay: Int?,
-    operations: List<CalendarOperation>,
-    categories: List<CalendarCategory>,
+    operations: List<CalendarOperationUi>,
+    categories: List<CalendarCategoryUi>,
     onDaySelected: (Int) -> Unit
 ) {
     val colors = CalendarTheme.colors
@@ -278,8 +277,8 @@ fun DayCalendarGrid(
 
 @Composable
 private fun SimpleTransactionItem(
-    operation: CalendarOperation,
-    category: CalendarCategory?
+    operation: CalendarOperationUi,
+    category: CalendarCategoryUi?
 ) {
     val colors = CalendarTheme.colors
     val typography = CalendarTheme.typography

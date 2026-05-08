@@ -1,7 +1,7 @@
 package com.example.sdk.presentation.statistics
 
 import androidx.compose.ui.graphics.Color
-import com.example.sdk.domain.model.CalendarCategory
+import com.example.sdk.domain.model.CalendarCategoryUi
 
 data class CategoryItem(
     val icon: String,
@@ -15,5 +15,5 @@ data class DonutSegment(
     val color: Color,
     val startAngle: Float,
     val sweepAngle: Float,
-    val category: CalendarCategory
+    val category: CalendarCategoryUi
 )

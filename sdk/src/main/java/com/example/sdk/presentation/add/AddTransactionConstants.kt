@@ -1,9 +1,9 @@
 package com.example.sdk.presentation.add
 
-import com.example.sdk.domain.model.CalendarCategory
+import com.example.sdk.domain.model.CalendarCategoryUi
 
 data class AddCategoryUi(
-    val category: CalendarCategory,
+    val category: CalendarCategoryUi,
     val subtitle: String? = null
 )
 

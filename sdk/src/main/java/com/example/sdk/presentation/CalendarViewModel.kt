@@ -4,7 +4,11 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.sdk.domain.model.*
+import com.example.sdk.data.network.dto.Recurrence
+import com.example.sdk.data.network.dto.RecurrenceUnit
+import com.example.sdk.domain.model.CalendarCategoryUi
+import com.example.sdk.domain.model.CalendarOperationUi
+import com.example.sdk.domain.model.DayData
 import com.example.sdk.domain.repository.TransactionsRepository
 import com.example.sdk.presentation.models.ViewModeTab
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -29,8 +33,8 @@ class CalendarViewModel @Inject constructor(
         loadStartData()
     }
 
-    private var domainOperations: List<CalendarOperation> = emptyList()
-    private var domainCategories: List<CalendarCategory> = emptyList()
+    private var domainOperations: List<CalendarOperationUi> = emptyList()
+    private var domainCategories: List<CalendarCategoryUi> = emptyList()
 
     private fun loadStartData() {
         viewModelScope.launch {
@@ -39,42 +43,8 @@ class CalendarViewModel @Inject constructor(
                     repo.getCalendarData()
                 }
                 
-                domainOperations = data.operations.map { dtoOp ->
-                    CalendarOperation(
-                        id = dtoOp.id,
-                        title = dtoOp.title,
-                        amount = dtoOp.amount,
-                        dateTime = dtoOp.dateTime,
-                        categoryId = dtoOp.categoryId,
-                        isCustom = dtoOp.isCustom,
-                        status = when(dtoOp.status) {
-                            com.example.sdk.data.network.dto.OperationStatus.SUCCESS -> OperationStatus.SUCCESS
-                            com.example.sdk.data.network.dto.OperationStatus.ERROR -> OperationStatus.ERROR
-                            null -> null
-                        },
-                        recurrence = dtoOp.recurrence?.let {
-                            Recurrence(
-                                every = it.every,
-                                unit = when(it.unit) {
-                                    com.example.sdk.data.network.dto.RecurrenceUnit.DAY -> RecurrenceUnit.DAY
-                                    com.example.sdk.data.network.dto.RecurrenceUnit.WEEK -> RecurrenceUnit.WEEK
-                                    com.example.sdk.data.network.dto.RecurrenceUnit.MONTH -> RecurrenceUnit.MONTH
-                                },
-                                time = it.time
-                            )
-                        }
-                    )
-                }
-                domainCategories = data.categories.map { dtoCat ->
-                    CalendarCategory(
-                        id = dtoCat.id,
-                        name = dtoCat.name,
-                        iconUrl = dtoCat.iconUrl,
-                        color = dtoCat.color,
-                        isIncome = dtoCat.isIncome,
-                        amount = dtoCat.amount
-                    )
-                }
+                domainOperations = data.operations.map { it.toUi() }
+                domainCategories = data.categories.map { it.toUi() }
 
                 _uiState.update { it.copy(categories = domainCategories) }
                 rebuildMonth()
@@ -94,7 +64,7 @@ class CalendarViewModel @Inject constructor(
     }
 
     private fun buildCalendar(
-        operations: List<CalendarOperation>,
+        operations: List<CalendarOperationUi>,
         monthCalendar: Calendar
     ): Map<Int, DayData> {
         val year = monthCalendar.get(Calendar.YEAR)
@@ -106,7 +76,7 @@ class CalendarViewModel @Inject constructor(
         }.toMutableMap()
 
         operations.forEach { op ->
-            val opCal = Calendar.getInstance().apply { timeInMillis = op.dateTime * 1000 }
+            val opCal = Calendar.getInstance().apply { timeInMillis = op.dateTime }
 
             if (opCal.get(Calendar.YEAR) == year && opCal.get(Calendar.MONTH) == month) {
                 val day = opCal.get(Calendar.DAY_OF_MONTH)
@@ -216,35 +186,11 @@ class CalendarViewModel @Inject constructor(
         _uiState.update { it.copy(isAddTransactionVisible = false) }
     }
 
-    fun saveOperation(operation: CalendarOperation) {
+    fun saveOperation(operation: CalendarOperationUi) {
         viewModelScope.launch {
             try {
                 // Mapping Domain back to DTO for saving
-                val dtoOp = com.example.sdk.data.network.dto.CalendarOperation(
-                    id = operation.id,
-                    title = operation.title,
-                    amount = operation.amount,
-                    dateTime = operation.dateTime,
-                    categoryId = operation.categoryId,
-                    isCustom = operation.isCustom,
-                    status = operation.status?.let {
-                        when(it) {
-                            OperationStatus.SUCCESS -> com.example.sdk.data.network.dto.OperationStatus.SUCCESS
-                            OperationStatus.ERROR -> com.example.sdk.data.network.dto.OperationStatus.ERROR
-                        }
-                    },
-                    recurrence = operation.recurrence?.let {
-                        com.example.sdk.data.network.dto.Recurrence(
-                            every = it.every,
-                            unit = when(it.unit) {
-                                RecurrenceUnit.DAY -> com.example.sdk.data.network.dto.RecurrenceUnit.DAY
-                                RecurrenceUnit.WEEK -> com.example.sdk.data.network.dto.RecurrenceUnit.WEEK
-                                RecurrenceUnit.MONTH -> com.example.sdk.data.network.dto.RecurrenceUnit.MONTH
-                            },
-                            time = it.time
-                        )
-                    }
-                )
+                val dtoOp = operation.toDto()
                 withContext(Dispatchers.IO) {
                     repo.addOperation(dtoOp)
                 }

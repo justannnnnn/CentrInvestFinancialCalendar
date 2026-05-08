@@ -14,17 +14,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.sdk.domain.model.CalendarCategory
-import com.example.sdk.domain.model.CalendarOperation
+import com.example.sdk.domain.model.CalendarCategoryUi
+import com.example.sdk.domain.model.CalendarOperationUi
 import com.example.sdk.ui.theme.CalendarTheme
 
 @Composable
 fun TransactionItem(
-    operation: CalendarOperation,
-    category: CalendarCategory?,
+    operation: CalendarOperationUi,
+    category: CalendarCategoryUi?,
     modifier: Modifier = Modifier
 ) {
     val colors = CalendarTheme.colors

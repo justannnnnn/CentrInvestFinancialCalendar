@@ -12,7 +12,7 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface CalendarApi {
-    @GET("calendar_data")
+    @GET("rpc/calendar_data")
     suspend fun getFinancialCalendar(): FinancialCalendarInput
 
     @GET("categories?select=*")

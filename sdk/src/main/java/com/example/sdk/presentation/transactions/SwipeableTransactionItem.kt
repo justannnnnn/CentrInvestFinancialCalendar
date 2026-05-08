@@ -19,7 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.sdk.domain.model.CalendarCategory
+import com.example.sdk.domain.model.CalendarCategoryUi
 import com.example.sdk.presentation.statistics.formatSum
 import com.example.sdk.ui.theme.CalendarTheme
 import kotlin.math.roundToInt
@@ -28,7 +28,7 @@ data class SwipeableTransaction(
     val id: Int,
     val name: String,
     val amount: Long,
-    val category: CalendarCategory
+    val category: CalendarCategoryUi
 )
 
 @Composable

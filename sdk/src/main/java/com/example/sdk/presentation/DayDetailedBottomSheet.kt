@@ -16,8 +16,8 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.sdk.domain.model.CalendarCategory
-import com.example.sdk.domain.model.CalendarOperation
+import com.example.sdk.domain.model.CalendarCategoryUi
+import com.example.sdk.domain.model.CalendarOperationUi
 import com.example.sdk.presentation.components.IconWrapper
 import com.example.sdk.presentation.statistics.formatSum
 import com.example.sdk.ui.theme.CalendarTheme
@@ -28,11 +28,11 @@ import java.util.Calendar
 @SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
 fun DayDetailedBottomSheet(
-    dayOperations: List<CalendarOperation>,
-    categories: List<CalendarCategory>,
+    dayOperations: List<CalendarOperationUi>,
+    categories: List<CalendarCategoryUi>,
     selectedDay: Calendar,
     onClickAdd: () -> Unit,
-    onClickTransaction: (CalendarOperation) -> Unit
+    onClickTransaction: (CalendarOperationUi) -> Unit
 ) {
     val colors = CalendarTheme.colors
     val typography = CalendarTheme.typography
@@ -95,7 +95,7 @@ private fun TransactionItem(
     icon: String,
     name: String,
     category: String,
-    amount: Long,
+    amount: Double,
     color: String,
     onClickTransaction: () -> Unit
 ) {
@@ -153,7 +153,7 @@ private fun TransactionItem(
         }
 
         Text(
-            text = "${(amount / 100.0).formatSum()} ₽",
+            text = "${amount.formatSum()} ₽",
             style = typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
             color = if (amount < 0) colors.textPrimary else colors.primary
         )
@@ -217,7 +217,7 @@ private fun PlusButton(onClick: () -> Unit) {
 @Composable
 private fun DayStats(
     operationCount: Int,
-    dayBalance: Long
+    dayBalance: Double
 ) {
     val colors = CalendarTheme.colors
     val typography = CalendarTheme.typography
@@ -239,7 +239,7 @@ private fun DayStats(
             color = colors.textSecondary
         )
         Text(
-            text = "${(dayBalance / 100.0).formatSum()} ₽",
+            text = "${dayBalance.formatSum()} ₽",
             style = typography.titleMedium.copy(fontWeight = FontWeight.Bold),
             color = if (dayBalance < 0) colors.expense else colors.income
         )
