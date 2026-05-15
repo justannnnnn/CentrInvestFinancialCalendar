@@ -11,12 +11,12 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.ui.Modifier
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -392,7 +392,6 @@ fun FinancialCalendarView(
                                     calendar = uiState.selectedPeriod,
                                     selectedDay = uiState.selectedDate?.get(java.util.Calendar.DAY_OF_MONTH),
                                     daysData = uiState.daysData,
-                                    categories = uiState.categories,
                                     onDaySelected = { day ->
                                         viewModel.onAction(CalendarUiAction.OnDaySelected(day))
                                     }
@@ -401,11 +400,10 @@ fun FinancialCalendarView(
 
                             ViewModeTab.Day -> {
                                 val selectedDay =
-                                    uiState.selectedDate?.get(java.util.Calendar.DAY_OF_MONTH)
+                                    uiState.selectedPeriod.get(java.util.Calendar.DAY_OF_MONTH)
 
-                                val dayOperations = selectedDay?.let { day ->
-                                    uiState.daysData[day]?.operations
-                                } ?: emptyList()
+                                val dayOperations =
+                                    uiState.daysData[selectedDay]?.operations ?: emptyList()
 
                                 DayCalendarGrid(
                                     calendar = uiState.selectedPeriod,

@@ -42,9 +42,9 @@ class CalendarViewModel @Inject constructor(
                 val data = withContext(Dispatchers.IO) {
                     repo.getCalendarData()
                 }
-                
-                domainOperations = data.operations.map { it.toUi() }
+
                 domainCategories = data.categories.map { it.toUi() }
+                domainOperations = data.operations.map { it.toUi(data.categories) }
 
                 _uiState.update { it.copy(categories = domainCategories) }
                 rebuildMonth()

@@ -20,8 +20,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.example.sdk.domain.model.CalendarCategoryUi
 import com.example.sdk.ui.theme.CalendarTheme
+import kotlin.math.abs
 
 @SuppressLint("DefaultLocale")
 @Composable
@@ -37,7 +39,7 @@ fun StatsCategoryList(categoriesToSum: Map<CalendarCategoryUi, Long>) {
             .padding(horizontal = 16.dp)
     ) {
         categoriesToSum.entries
-            .sortedByDescending { it.value }
+            .sortedByDescending { abs(it.value) }
             .forEach { (category, sum) ->
                 val percentage = if (category.isIncome || totalExpenses == 0L) {
                     0f
@@ -71,9 +73,10 @@ fun StatsCategoryList(categoriesToSum: Map<CalendarCategoryUi, Long>) {
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = category.iconUrl, // Assuming iconUrl is used as emoji for now
-                                style = typography.titleMedium
+                            AsyncImage(
+                                model = category.iconUrl,
+                                contentDescription = null,
+                                modifier = Modifier.size(30.dp)
                             )
                         }
 
@@ -96,9 +99,9 @@ fun StatsCategoryList(categoriesToSum: Map<CalendarCategoryUi, Long>) {
                     }
 
                     Text(
-                        text = "${if (!category.isIncome) "- " else ""}${(sum / 100.0).formatSum()} ₽",
+                        text = "${sum.formatSum()} ₽",
                         style = typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                        color = if (category.isIncome) colors.primary else colors.textPrimary
+                        color = if (category.isIncome) colors.income else colors.expense
                     )
                 }
 

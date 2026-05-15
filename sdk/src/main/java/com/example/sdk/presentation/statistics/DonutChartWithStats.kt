@@ -15,36 +15,42 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.sdk.R
 import com.example.sdk.domain.model.CalendarCategoryUi
 import com.example.sdk.presentation.utils.AutoSizeText
 import com.example.sdk.ui.theme.CalendarTheme
+import kotlin.math.abs
 
 @Composable
-fun DonutChartWithStats(categoriesToSum: Map<CalendarCategoryUi, Long>) {
+fun DonutChartWithStats(
+    categoriesToSum: Map<CalendarCategoryUi, Long>,
+    centerText: String,
+    amountColor: Color
+) {
     val colors = CalendarTheme.colors
     val typography = CalendarTheme.typography
-    val expenseCategories = categoriesToSum.filter { it.key.isIncome.not() }
 
-    val totalExpenses = expenseCategories.values.sumOf { it }
-    val totalIncome = categoriesToSum.filter { it.key.isIncome }.values.sumOf { it }
-    val balance = totalIncome - totalExpenses
+    val totalAmount = categoriesToSum.values.sumOf { abs(it) }
 
     val segments = mutableListOf<DonutSegment>()
     var startAngle = -90f
 
-    if (totalExpenses > 0) {
-        expenseCategories.forEach { (category, sum) ->
-            val sweepAngle = (sum.toFloat() / totalExpenses.toFloat()) * 360f
+    if (totalAmount > 0) {
+        categoriesToSum.forEach { (category, sum) ->
+
+            val sweepAngle =
+                (sum.toFloat() / totalAmount.toFloat()) * 360f
+
             val parsedColor = try {
                 Color(android.graphics.Color.parseColor(category.color))
             } catch (e: Exception) {
                 colors.textSecondary
             }
+
             segments.add(
                 DonutSegment(
                     color = parsedColor,
@@ -53,27 +59,31 @@ fun DonutChartWithStats(categoriesToSum: Map<CalendarCategoryUi, Long>) {
                     category = category
                 )
             )
+
             startAngle += sweepAngle
         }
     }
 
     Box(
         modifier = Modifier
-            .fillMaxWidth()
-            .height(220.dp)
+            .size(160.dp)
             .padding(horizontal = 16.dp),
         contentAlignment = Alignment.Center
     ) {
-        Canvas(modifier = Modifier.size(180.dp)) {
+
+        Canvas(
+            modifier = Modifier.size(120.dp)
+        ) {
             segments.forEach { segment ->
+
                 drawArc(
                     color = segment.color,
                     startAngle = segment.startAngle,
                     sweepAngle = segment.sweepAngle,
                     useCenter = false,
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(
+                    style = Stroke(
                         width = 20.dp.toPx(),
-                        cap = androidx.compose.ui.graphics.StrokeCap.Butt
+                        cap = StrokeCap.Butt
                     ),
                     size = size
                 )
@@ -89,22 +99,25 @@ fun DonutChartWithStats(categoriesToSum: Map<CalendarCategoryUi, Long>) {
                 ),
             contentAlignment = Alignment.Center
         ) {
+
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
+
                 Text(
-                    text = stringResource(R.string.balance),
+                    text = centerText,
                     style = typography.labelSmall,
                     color = colors.textSecondary
                 )
+
                 AutoSizeText(
-                    text = "${(balance / 100.0).formatSum()} ₽",
+                    text = "${totalAmount.formatSum()} ₽",
                     maxTextSize = 18.sp,
                     minTextSize = 12.sp,
                     maxLines = 1,
                     fontWeight = FontWeight.Bold,
-                    color = if (balance < 0) colors.expense else colors.primary
+                    color = amountColor
                 )
             }
         }

@@ -12,10 +12,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.example.sdk.domain.model.CalendarCategoryUi
 import com.example.sdk.domain.model.CalendarOperationUi
 import com.example.sdk.presentation.components.IconWrapper
@@ -64,22 +67,19 @@ fun DayDetailedBottomSheet(
 
         DayStats(
             operationCount = dayOperations.size,
-            dayBalance = dayOperations.sumOf { op ->
-                val category = categories.find { it.id == op.categoryId }
-                if (category?.isIncome == true) op.amount else -op.amount
-            }
+            dayBalance = dayOperations.sumOf { op -> op.amount }
         )
 
         if (dayOperations.isEmpty()) {
             EmptyBottomSheetState()
         } else {
             dayOperations.forEach { operation ->
-                val category = categories.find { it.id == operation.categoryId }
+                val category = categories.find { it.id == operation.category?.id }
                 TransactionItem(
                     icon = category?.iconUrl ?: "❓",
                     name = operation.title,
                     category = category?.name ?: "Unknown",
-                    amount = operation.amount * (if (category?.isIncome == false) -1 else 1),
+                    amount = operation.amount,
                     color = category?.color ?: "#808080",
                     onClickTransaction = { onClickTransaction(operation) }
                 )
@@ -128,9 +128,10 @@ private fun TransactionItem(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = icon,
-                    style = typography.titleLarge
+                AsyncImage(
+                    model = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(30.dp)
                 )
             }
 
@@ -155,7 +156,7 @@ private fun TransactionItem(
         Text(
             text = "${amount.formatSum()} ₽",
             style = typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-            color = if (amount < 0) colors.textPrimary else colors.primary
+            color = if (amount < 0) colors.expense else colors.income
         )
     }
 

@@ -33,12 +33,11 @@ fun WeekCalendarGrid(
     calendar: Calendar,
     selectedDay: Int?,
     daysData: Map<Int, DayData>,
-    categories: List<CalendarCategoryUi>,
     onDaySelected: (Int) -> Unit,
 ) {
     val colors = CalendarTheme.colors
     val typography = CalendarTheme.typography
-    val weekDays = getWeekDays(calendar, daysData, categories)
+    val weekDays = getWeekDays(calendar, daysData)
     val weekTotal = weekDays.sumOf { it.amount }
 
     LazyColumn(
@@ -61,7 +60,7 @@ fun WeekCalendarGrid(
                     color = colors.textSecondary
                 )
                 Text(
-                    text = "${(weekTotal / 100.0).formatSum()} ₽",
+                    text = "${weekTotal.formatSum()} ₽",
                     style = typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     color = if (weekTotal < 0) colors.expense else colors.primary
                 )
@@ -172,9 +171,9 @@ private fun WeekDayCard(
         }
 
         Text(
-            text = (dayItem.amount / 100.0).formatSum(),
+            text = dayItem.amount.formatSum(),
             style = typography.labelSmall,
-            color = if (dayItem.amount < 0) colors.expense else colors.primary
+            color = if (dayItem.amount < 0) colors.expense else colors.income
         )
     }
 }
@@ -187,8 +186,7 @@ private data class WeekDayItem(
 
 private fun getWeekDays(
     calendar: Calendar,
-    daysData: Map<Int, DayData>,
-    categories: List<CalendarCategoryUi>
+    daysData: Map<Int, DayData>
 ): List<WeekDayItem> {
     val weekDays = mutableListOf<WeekDayItem>()
     val daysOfWeek = listOf("Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс")
@@ -204,8 +202,7 @@ private fun getWeekDays(
                 dayOfWeek = daysOfWeek[index],
                 amount = (daysData[day]?.operations
                     ?.sumOf { op ->
-                        val isIncome = categories.find { it.id == op.categoryId }?.isIncome == true
-                        if (isIncome) op.amount else -op.amount
+                        op.amount
                     } ?: 0).toLong()
             )
         )

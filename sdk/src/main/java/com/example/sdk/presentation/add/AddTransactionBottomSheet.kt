@@ -175,7 +175,7 @@ fun AddTransactionBottomSheet(
                         title = uiState.description.ifBlank { uiState.selectedCategory?.name ?: "" },
                         amount = uiState.amount.toDoubleOrNull() ?: 0.0,
                         dateTime = System.currentTimeMillis(),
-                        categoryId = uiState.selectedCategory?.id ?: 0,
+                        category = uiState.selectedCategory,
                         isCustom = true,
                         status = null, // Future/Planned if dateTime is now/future
                         recurrence = if (uiState.isRecurring) {

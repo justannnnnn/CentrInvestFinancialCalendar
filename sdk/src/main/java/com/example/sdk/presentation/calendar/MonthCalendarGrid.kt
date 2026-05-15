@@ -1,5 +1,6 @@
 package com.example.sdk.presentation.calendar
 
+import android.content.res.Resources
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -14,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -34,6 +36,8 @@ fun MonthCalendarGrid(
     categories: List<CalendarCategoryUi>,
     onDaySelected: (Int) -> Unit
 ) {
+    val colors = CalendarTheme.colors
+
     val year = calendar.get(Calendar.YEAR)
     val month = calendar.get(Calendar.MONTH)
     val daysInMonth = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
@@ -47,10 +51,9 @@ fun MonthCalendarGrid(
         .flatMap { it.operations }
         .filter { it.amount != 0.0 }
 
-    // Map operations to their categories for statistics
     val categoriesToSum = allOperations
         .mapNotNull { op ->
-            val category = categories.find { it.id == op.categoryId }
+            val category = categories.find { it.id == op.category?.id }
             category?.let { it to op.amount }
         }
         .groupingBy { it.first }
@@ -81,7 +84,20 @@ fun MonthCalendarGrid(
 
         Divider()
 
-        DonutChartWithStats(categoriesToSum = categoriesToSum)
+        Row {
+            DonutChartWithStats(
+                categoriesToSum = categoriesToSum.filter { it.key.isIncome },
+                centerText = "Доходы",
+                amountColor = colors.income
+            )
+            DonutChartWithStats(
+                categoriesToSum = categoriesToSum.filter { it.key.isIncome.not() },
+                centerText = "Расходы",
+                amountColor = colors.expense
+            )
+        }
+
+
         StatsCategoryList(categoriesToSum = categoriesToSum)
 
         MonthTransactionsFallback(transactionsCount = allOperations.size)

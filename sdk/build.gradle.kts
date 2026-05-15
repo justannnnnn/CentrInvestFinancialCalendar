@@ -39,7 +39,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.0"
+        kotlinCompilerExtensionVersion = "1.5.14"
     }
 }
 
@@ -69,4 +69,6 @@ dependencies {
     implementation(libs.androidx.hilt.navigation.compose)
 
     implementation(libs.androidx.material.icons.extended)
+    implementation(libs.androidx.foundation)
+    implementation(libs.coil.compose)
 }

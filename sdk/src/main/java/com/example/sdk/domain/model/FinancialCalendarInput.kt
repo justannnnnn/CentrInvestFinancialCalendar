@@ -23,7 +23,7 @@ data class CalendarOperationUi(
     val title: String,               // "Покупка кофе"
     val amount: Double,                // Signed в копейках
     val dateTime: Long,              // Unix Timestamp в UTC
-    val categoryId: Int,             // ссылка на CalendarCategory.id
+    val category: CalendarCategoryUi?,             // ссылка на CalendarCategory.id
     val isCustom: Boolean,           // true = вымышленная/создана юзером, false = реальная банковская
     val status: OperationStatus?,    // null = будущая(можем определить по времени) - planned, SUCCESS/ERROR = прошлое или настоящее
     val recurrence: Recurrence?      // null = не регулярная
@@ -33,7 +33,7 @@ data class CalendarOperationUi(
         title = title,
         amount = (amount * 100).toLong(),
         dateTime = dateTime,
-        categoryId = categoryId,
+        categoryId = category?.id ?: 0,
         isCustom = isCustom,
         status = when (status) {
             OperationStatus.SUCCESS -> 0
