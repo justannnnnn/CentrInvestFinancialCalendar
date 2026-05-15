@@ -52,12 +52,21 @@ fun MonthCalendarGrid(
         .filter { it.amount != 0.0 }
 
     val categoriesToSum = allOperations
-        .mapNotNull { op ->
-            val category = categories.find { it.id == op.category?.id }
-            category?.let { it to op.amount }
+        .mapNotNull { operation ->
+            val category = categories.find { category ->
+                category.id == operation.categoryId
+            }
+
+            category?.let {
+                it to abs(operation.amount).toLong()
+            }
         }
-        .groupingBy { it.first }
-        .fold(0L) { acc, pair -> acc + pair.second.toLong() }
+        .groupingBy { pair ->
+            pair.first
+        }
+        .fold(0L) { acc, pair ->
+            acc + pair.second
+        }
 
     Column(
         modifier = Modifier

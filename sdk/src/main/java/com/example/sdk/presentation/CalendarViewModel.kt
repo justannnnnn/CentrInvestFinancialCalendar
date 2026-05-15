@@ -44,7 +44,7 @@ class CalendarViewModel @Inject constructor(
                 }
 
                 domainCategories = data.categories.map { it.toUi() }
-                domainOperations = data.operations.map { it.toUi(data.categories) }
+                domainOperations = data.operations.map { it.toUi() }
 
                 _uiState.update { it.copy(categories = domainCategories) }
                 rebuildMonth()
@@ -177,27 +177,159 @@ class CalendarViewModel @Inject constructor(
             }
 
             CalendarUiAction.OnAddClick -> {
-                _uiState.update { it.copy(isAddTransactionVisible = true) }
+                _uiState.update {
+                    it.copy(
+                        editingOperation = null,
+                        isAddTransactionVisible = true,
+                        addOperationError = null
+                    )
+                }
+            }
+            is CalendarUiAction.OnEditOperationClick -> {
+                _uiState.update {
+                    it.copy(
+                        editingOperation = action.operation,
+                        isAddTransactionVisible = true,
+                        showBottomSheet = false,
+                        addOperationError = null
+                    )
+                }
+            }
+
+            is CalendarUiAction.OnDeleteOperationClick -> {
+                _uiState.update {
+                    it.copy(
+                        pendingDeleteOperation = action.operation,
+                        deleteOperationError = null
+                    )
+                }
+            }
+
+            CalendarUiAction.OnConfirmDeleteOperation -> {
+                val operation = _uiState.value.pendingDeleteOperation
+
+                if (operation != null) {
+                    deleteOperation(operation)
+                }
+            }
+
+            CalendarUiAction.OnCancelDeleteOperation -> {
+                _uiState.update {
+                    it.copy(
+                        pendingDeleteOperation = null,
+                        deleteOperationError = null
+                    )
+                }
             }
         }
     }
 
     fun onAddDismiss() {
-        _uiState.update { it.copy(isAddTransactionVisible = false) }
+        _uiState.update {
+            it.copy(
+                isAddTransactionVisible = false,
+                editingOperation = null,
+                addOperationError = null
+            )
+        }
     }
-
     fun saveOperation(operation: CalendarOperationUi) {
+        if (_uiState.value.isSavingOperation) return
+
         viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isSavingOperation = true,
+                    addOperationError = null
+                )
+            }
+
             try {
-                // Mapping Domain back to DTO for saving
-                val dtoOp = operation.toDto()
-                withContext(Dispatchers.IO) {
-                    repo.addOperation(dtoOp)
+                val editingOperation = _uiState.value.editingOperation
+
+                val operationToSave = if (editingOperation != null) {
+                    operation.copy(
+                        id = editingOperation.id,
+                        isCustom = editingOperation.isCustom,
+                        status = editingOperation.status
+                    )
+                } else {
+                    operation
                 }
-                _uiState.update { it.copy(isAddTransactionVisible = false) }
-                loadStartData() // Reload to show new data
+
+                val dtoOperation = operationToSave.toDto()
+
+                withContext(Dispatchers.IO) {
+                    if (editingOperation != null) {
+                        repo.updateOperation(dtoOperation)
+                    } else {
+                        repo.addOperation(dtoOperation)
+                    }
+                }
+
+                _uiState.update {
+                    it.copy(
+                        isAddTransactionVisible = false,
+                        editingOperation = null,
+                        isSavingOperation = false,
+                        addOperationError = null
+                    )
+                }
+
+                loadStartData()
             } catch (e: Exception) {
                 e.printStackTrace()
+
+                _uiState.update {
+                    it.copy(
+                        isSavingOperation = false,
+                        addOperationError = e.message ?: "Не удалось сохранить операцию"
+                    )
+                }
+            }
+        }
+    }
+
+    private fun deleteOperation(operation: CalendarOperationUi) {
+        if (_uiState.value.isDeletingOperation) return
+
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isDeletingOperation = true,
+                    deleteOperationError = null
+                )
+            }
+
+            try {
+                withContext(Dispatchers.IO) {
+                    repo.deleteOperation(operation.id)
+                }
+
+                domainOperations = domainOperations.filterNot {
+                    it.id == operation.id
+                }
+
+                rebuildMonth()
+
+                _uiState.update {
+                    it.copy(
+                        isDeletingOperation = false,
+                        pendingDeleteOperation = null,
+                        deleteOperationError = null
+                    )
+                }
+
+                loadStartData()
+            } catch (e: Exception) {
+                e.printStackTrace()
+
+                _uiState.update {
+                    it.copy(
+                        isDeletingOperation = false,
+                        deleteOperationError = e.message ?: "Не удалось удалить операцию"
+                    )
+                }
             }
         }
     }

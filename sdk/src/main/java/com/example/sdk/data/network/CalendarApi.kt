@@ -10,6 +10,7 @@ import retrofit2.http.POST
 import retrofit2.http.PATCH
 import retrofit2.http.Path
 import retrofit2.http.Query
+import retrofit2.http.DELETE
 
 interface CalendarApi {
     @GET("rpc/calendar_data")
@@ -32,6 +33,11 @@ interface CalendarApi {
 
     @POST("categories")
     suspend fun createCategory(@Body category: CalendarCategory): Response<Unit>
+
+    @DELETE("operations")
+    suspend fun deleteOperation(
+        @Query("id") id: String
+    ): Response<Unit>
 }
 
 /**
@@ -43,5 +49,6 @@ data class PartialCalendarOperation(
     val dateTime: Long? = null,
     val categoryId: Int? = null,
     val isCustom: Boolean? = null,
-    val status: String? = null
+    val status: Int? = null,
+    val recurrence: com.example.sdk.data.network.dto.Recurrence? = null
 )

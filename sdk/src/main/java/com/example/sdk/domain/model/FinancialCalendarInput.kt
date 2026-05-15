@@ -20,20 +20,20 @@ data class CalendarCategoryUi(
 
 data class CalendarOperationUi(
     val id: Int,
-    val title: String,               // "Покупка кофе"
-    val amount: Double,                // Signed в копейках
-    val dateTime: Long,              // Unix Timestamp в UTC
-    val category: CalendarCategoryUi?,             // ссылка на CalendarCategory.id
-    val isCustom: Boolean,           // true = вымышленная/создана юзером, false = реальная банковская
-    val status: OperationStatus?,    // null = будущая(можем определить по времени) - planned, SUCCESS/ERROR = прошлое или настоящее
-    val recurrence: Recurrence?      // null = не регулярная
+    val title: String,
+    val amount: Double,
+    val dateTime: Long,
+    val categoryId: Int,
+    val isCustom: Boolean,
+    val status: OperationStatus?,
+    val recurrence: Recurrence?
 ) {
     fun toDto() = CalendarOperation(
-        id = id,
+        id = id.takeIf { it > 0 },
         title = title,
         amount = (amount * 100).toLong(),
         dateTime = dateTime,
-        categoryId = category?.id ?: 0,
+        categoryId = categoryId,
         isCustom = isCustom,
         status = when (status) {
             OperationStatus.SUCCESS -> 0

@@ -29,7 +29,7 @@ data class CalendarCategory(
 }
 
 data class CalendarOperation(
-    val id: Int,
+    val id: Int? = null,
     val title: String,               // "Покупка кофе"
     val amount: Long,
     @SerialName("date_time")// Signed в копейках
@@ -39,12 +39,12 @@ data class CalendarOperation(
     val status: Int?,    // null = будущая(можем определить по времени) - planned, SUCCESS/ERROR = прошлое или настоящее
     val recurrence: Recurrence?      // null = не регулярная
 ) {
-    fun toUi(categories: List<CalendarCategory>) = CalendarOperationUi(
-        id = id,
+    fun toUi() = CalendarOperationUi(
+        id = id ?: 0,
         title = title,
         amount = (amount / 100f).toDouble(),
         dateTime = dateTime,
-        category = categories.find { it.id == categoryId }?.toUi(),
+        categoryId = categoryId,
         isCustom = isCustom,
         status = when (status) {
             0 -> OperationStatus.SUCCESS

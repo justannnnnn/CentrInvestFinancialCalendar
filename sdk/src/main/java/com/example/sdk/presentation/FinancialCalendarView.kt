@@ -412,6 +412,12 @@ fun FinancialCalendarView(
                                     categories = uiState.categories,
                                     onDaySelected = { day ->
                                         viewModel.onAction(CalendarUiAction.OnDaySelected(day))
+                                    },
+                                    onEditOperation = { operation ->
+                                        viewModel.onAction(CalendarUiAction.OnEditOperationClick(operation))
+                                    },
+                                    onDeleteOperation = { operation ->
+                                        viewModel.onAction(CalendarUiAction.OnDeleteOperationClick(operation))
                                     }
                                 )
                             }
@@ -441,7 +447,11 @@ fun FinancialCalendarView(
                         categories = uiState.categories,
                         selectedDay = uiState.selectedDate ?: uiState.selectedPeriod,
                         onClickAdd = { viewModel.onAction(CalendarUiAction.OnAddClick) },
-                        onClickTransaction = { }
+                        onClickTransaction = { operation ->
+                            viewModel.onAction(
+                                CalendarUiAction.OnEditOperationClick(operation)
+                            )
+                        }
                     )
                 }
             }
@@ -449,7 +459,17 @@ fun FinancialCalendarView(
             if (uiState.isAddTransactionVisible) {
                 AddTransactionBottomSheet(
                     categories = uiState.categories,
-                    onDismiss = { viewModel.onAddDismiss() },
+                    isSaving = uiState.isSavingOperation,
+                    errorMessage = uiState.addOperationError,
+                    selectedDateMillis = (
+                            uiState.selectedDate ?: uiState.selectedPeriod
+                            ).timeInMillis,
+                    initialOperation = uiState.editingOperation,
+                    onDismiss = {
+                        if (!uiState.isSavingOperation) {
+                            viewModel.onAddDismiss()
+                        }
+                    },
                     onSave = { operation ->
                         viewModel.saveOperation(operation)
                     }
@@ -658,6 +678,65 @@ fun FinancialCalendarView(
                         },
                     )
                 }
+            }
+
+            uiState.pendingDeleteOperation?.let { operationToDelete ->
+                AlertDialog(
+                    onDismissRequest = {
+                        if (!uiState.isDeletingOperation) {
+                            viewModel.onAction(CalendarUiAction.OnCancelDeleteOperation)
+                        }
+                    },
+                    title = {
+                        Text("Удалить операцию?")
+                    },
+                    text = {
+                        Column {
+                            Text(
+                                text = "Операция «${operationToDelete.title}» будет удалена. Это действие нельзя отменить."
+                            )
+
+                            val deleteError = uiState.deleteOperationError
+
+                            if (deleteError != null) {
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Text(
+                                    text = deleteError,
+                                    color = colors.expense
+                                )
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                viewModel.onAction(CalendarUiAction.OnConfirmDeleteOperation)
+                            },
+                            enabled = !uiState.isDeletingOperation
+                        ) {
+                            Text(
+                                text = if (uiState.isDeletingOperation) {
+                                    "Удаляем..."
+                                } else {
+                                    "Удалить"
+                                },
+                                color = colors.expense
+                            )
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(
+                            onClick = {
+                                viewModel.onAction(CalendarUiAction.OnCancelDeleteOperation)
+                            },
+                            enabled = !uiState.isDeletingOperation
+                        ) {
+                            Text("Отмена")
+                        }
+                    },
+                    containerColor = colors.surface
+                )
             }
 
             if (showDiscardChangesDialog) {

@@ -18,7 +18,16 @@ data class CalendarUiState(
         listOf(ViewModeTab.Month, ViewModeTab.Week, ViewModeTab.Day),
     val selectedViewMode: ViewModeTab = ViewModeTab.Month,
     val showBottomSheet: Boolean = false,
-    val isAddTransactionVisible: Boolean = false
+    val isAddTransactionVisible: Boolean = false,
+
+    val editingOperation: CalendarOperationUi? = null,
+    val pendingDeleteOperation: CalendarOperationUi? = null,
+
+    val isSavingOperation: Boolean = false,
+    val isDeletingOperation: Boolean = false,
+
+    val addOperationError: String? = null,
+    val deleteOperationError: String? = null
 ) {
     val allMonthTransactions: List<CalendarOperationUi>
         get() = daysData.values.flatMap { it.operations }
@@ -31,6 +40,17 @@ sealed interface CalendarUiAction {
     data class OnDaySelected(val day: Int) : CalendarUiAction
 
     data class OnViewModeSelected(val mode: ViewModeTab) : CalendarUiAction
+
+    data class OnEditOperationClick(
+        val operation: CalendarOperationUi
+    ) : CalendarUiAction
+
+    data class OnDeleteOperationClick(
+        val operation: CalendarOperationUi
+    ) : CalendarUiAction
+
+    data object OnConfirmDeleteOperation : CalendarUiAction
+    data object OnCancelDeleteOperation : CalendarUiAction
 
     data object OnDismissBottomSheet : CalendarUiAction
     data object OnAddClick : CalendarUiAction

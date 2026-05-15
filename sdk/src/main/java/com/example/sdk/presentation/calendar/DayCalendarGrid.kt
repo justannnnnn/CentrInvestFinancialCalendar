@@ -3,34 +3,52 @@ package com.example.sdk.presentation.calendar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.example.sdk.domain.model.CalendarCategoryUi
 import com.example.sdk.domain.model.CalendarOperationUi
 import com.example.sdk.presentation.statistics.formatSum
 import com.example.sdk.ui.theme.CalendarTheme
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import coil.compose.AsyncImage
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 @Composable
 fun DayCalendarGrid(
@@ -38,15 +56,19 @@ fun DayCalendarGrid(
     selectedDay: Int?,
     operations: List<CalendarOperationUi>,
     categories: List<CalendarCategoryUi>,
-    onDaySelected: (Int) -> Unit
+    onDaySelected: (Int) -> Unit,
+    onEditOperation: (CalendarOperationUi) -> Unit,
+    onDeleteOperation: (CalendarOperationUi) -> Unit
 ) {
     val colors = CalendarTheme.colors
     val typography = CalendarTheme.typography
+
     val currentDay = selectedDay ?: calendar.get(Calendar.DAY_OF_MONTH)
 
     val selectedDateCalendar = (calendar.clone() as Calendar).apply {
         set(Calendar.DAY_OF_MONTH, currentDay)
     }
+
     var selectedFilter by remember {
         mutableStateOf(CategoryFilter.ALL)
     }
@@ -56,24 +78,17 @@ fun DayCalendarGrid(
         .replaceFirstChar { it.uppercase() }
 
     val income = operations
-        .filter { it.amount > 0 }
+        .filter { it.amount > 0.0 }
         .sumOf { it.amount }
 
     val expenseAbs = operations
-        .filter { it.amount < 0 }
+        .filter { it.amount < 0.0 }
         .sumOf { abs(it.amount) }
 
     val filteredOperations = when (selectedFilter) {
-
         CategoryFilter.ALL -> operations
-
-        CategoryFilter.INCOME -> {
-            operations.filter { it.amount > 0 }
-        }
-
-        CategoryFilter.EXPENSE -> {
-            operations.filter { it.amount < 0 }
-        }
+        CategoryFilter.INCOME -> operations.filter { it.amount > 0.0 }
+        CategoryFilter.EXPENSE -> operations.filter { it.amount < 0.0 }
     }
 
     val totalAmount = filteredOperations.sumOf {
@@ -81,11 +96,14 @@ fun DayCalendarGrid(
     }
 
     val categorySummary = filteredOperations
-        .mapNotNull { op ->
-            categories.find { it.id == op.category?.id }
-                ?.let { category ->
-                    category to abs(op.amount)
-                }
+        .mapNotNull { operation ->
+            val category = categories.find { category ->
+                category.id == operation.categoryId
+            }
+
+            category?.let {
+                it to abs(operation.amount)
+            }
         }
         .groupBy { it.first }
         .mapValues { entry ->
@@ -94,7 +112,6 @@ fun DayCalendarGrid(
         .toList()
         .sortedByDescending { it.second }
         .take(3)
-
 
     LazyColumn(
         modifier = Modifier
@@ -146,7 +163,6 @@ fun DayCalendarGrid(
                             color = colors.surface,
                             shape = RoundedCornerShape(16.dp)
                         )
-                        .padding(16.dp)
                         .clickable {
                             selectedFilter =
                                 if (selectedFilter == CategoryFilter.INCOME) {
@@ -154,7 +170,8 @@ fun DayCalendarGrid(
                                 } else {
                                     CategoryFilter.INCOME
                                 }
-                        },
+                        }
+                        .padding(16.dp),
                     contentAlignment = Alignment.BottomStart
                 ) {
                     Column {
@@ -163,6 +180,7 @@ fun DayCalendarGrid(
                             style = typography.labelSmall,
                             color = colors.surface.copy(alpha = 0.8f)
                         )
+
                         Text(
                             text = "+${income.formatSum()} ₽",
                             style = typography.titleLarge.copy(fontWeight = FontWeight.Bold),
@@ -189,7 +207,6 @@ fun DayCalendarGrid(
                             color = colors.surface,
                             shape = RoundedCornerShape(16.dp)
                         )
-                        .padding(16.dp)
                         .clickable {
                             selectedFilter =
                                 if (selectedFilter == CategoryFilter.EXPENSE) {
@@ -197,7 +214,8 @@ fun DayCalendarGrid(
                                 } else {
                                     CategoryFilter.EXPENSE
                                 }
-                        },
+                        }
+                        .padding(16.dp),
                     contentAlignment = Alignment.BottomStart
                 ) {
                     Column {
@@ -206,6 +224,7 @@ fun DayCalendarGrid(
                             style = typography.labelSmall,
                             color = colors.surface.copy(alpha = 0.8f)
                         )
+
                         Text(
                             text = "-${expenseAbs.formatSum()} ₽",
                             style = typography.titleLarge.copy(fontWeight = FontWeight.Bold),
@@ -216,7 +235,7 @@ fun DayCalendarGrid(
             }
         }
 
-        if (categorySummary.isNotEmpty() && expenseAbs > 0.0) {
+        if (categorySummary.isNotEmpty() && totalAmount > 0.0) {
             item {
                 Text(
                     text = "Топ категорий",
@@ -227,12 +246,16 @@ fun DayCalendarGrid(
             }
 
             items(categorySummary) { (category, amount) ->
-                val percentage = ((amount / expenseAbs) * 100.0).toFloat().coerceIn(0f, 100f)
+                val percentage = ((amount / totalAmount) * 100.0)
+                    .toFloat()
+                    .coerceIn(0f, 100f)
 
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onDaySelected(currentDay) },
+                        .clickable {
+                            onDaySelected(currentDay)
+                        },
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = colors.borderLight
@@ -251,22 +274,31 @@ fun DayCalendarGrid(
                             Row(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                AsyncImage(
-                                    model = category.iconUrl,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(30.dp).padding(end = 8.dp)
+                                Text(
+                                    text = category.iconUrl,
+                                    style = typography.titleMedium,
+                                    modifier = Modifier.padding(end = 8.dp)
                                 )
+
                                 Text(
                                     text = category.name,
-                                    style = typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                                    style = typography.bodyLarge.copy(
+                                        fontWeight = FontWeight.Medium
+                                    ),
                                     color = colors.textPrimary
                                 )
                             }
 
                             Text(
                                 text = "${amount.formatSum()} ₽",
-                                style = typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                                color = colors.textPrimary
+                                style = typography.bodyLarge.copy(
+                                    fontWeight = FontWeight.Medium
+                                ),
+                                color = if (category.isIncome) {
+                                    colors.income
+                                } else {
+                                    colors.expense
+                                }
                             )
                         }
 
@@ -286,7 +318,7 @@ fun DayCalendarGrid(
                                     .clip(RoundedCornerShape(3.dp))
                                     .background(
                                         if (category.isIncome) {
-                                            colors.primary
+                                            colors.income
                                         } else {
                                             colors.expense
                                         }
@@ -307,12 +339,14 @@ fun DayCalendarGrid(
             )
         }
 
-        if (operations.isEmpty()) {
+        if (filteredOperations.isEmpty()) {
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = colors.borderLight)
+                    colors = CardDefaults.cardColors(
+                        containerColor = colors.borderLight
+                    )
                 ) {
                     Box(
                         modifier = Modifier
@@ -329,9 +363,26 @@ fun DayCalendarGrid(
                 }
             }
         } else {
-            items(filteredOperations) { operation ->
-                val category = categories.find { it.id == operation.category?.id }
-                SimpleTransactionItem(operation = operation, category = category)
+            items(
+                items = filteredOperations,
+                key = { operation ->
+                    "${operation.id}_${operation.dateTime}_${operation.title}"
+                }
+            ) { operation ->
+                val category = categories.find { category ->
+                    category.id == operation.categoryId
+                }
+
+                SwipeableTransactionItem(
+                    operation = operation,
+                    category = category,
+                    onEdit = {
+                        onEditOperation(operation)
+                    },
+                    onDelete = {
+                        onDeleteOperation(operation)
+                    }
+                )
             }
         }
 
@@ -342,66 +393,205 @@ fun DayCalendarGrid(
 }
 
 @Composable
-private fun SimpleTransactionItem(
+private fun SwipeableTransactionItem(
     operation: CalendarOperationUi,
-    category: CalendarCategoryUi?
+    category: CalendarCategoryUi?,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
 ) {
     val colors = CalendarTheme.colors
     val typography = CalendarTheme.typography
-    val isExpense = operation.amount < 0
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = colors.surface)
+    var offsetX by remember(operation.id, operation.dateTime, operation.title) {
+        mutableFloatStateOf(0f)
+    }
+
+    val shape = RoundedCornerShape(16.dp)
+    val itemHeight = 78.dp
+    val maxSwipeOffset = 112f
+    val swipeThreshold = 56f
+    val isExpense = operation.amount < 0.0
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(itemHeight)
+            .clip(shape)
+            .background(colors.borderLight)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .fillMaxHeight()
+        ) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .background(Color(0xFFFFF4DE))
+                    .clickable {
+                        offsetX = 0f
+                        onEdit()
+                    },
+                contentAlignment = Alignment.CenterStart
+            ) {
+                Row(
+                    modifier = Modifier.padding(start = 18.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Редактировать",
+                        tint = Color(0xFFE69500),
+                        modifier = Modifier.size(18.dp)
+                    )
+
+                    Text(
+                        text = "Изменить",
+                        style = typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                        color = Color(0xFFE69500)
+                    )
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .background(colors.expense.copy(alpha = 0.14f))
+                    .clickable {
+                        offsetX = 0f
+                        onDelete()
+                    },
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                Row(
+                    modifier = Modifier.padding(end = 18.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = "Удалить",
+                        style = typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                        color = colors.expense
+                    )
+
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Удалить",
+                        tint = colors.expense,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+        }
+
+        Card(
+            modifier = Modifier
+                .offset {
+                    IntOffset(
+                        x = offsetX.roundToInt(),
+                        y = 0
+                    )
+                }
+                .fillMaxWidth()
+                .height(itemHeight)
+                .pointerInput(operation.id, operation.dateTime, operation.title) {
+                    detectHorizontalDragGestures(
+                        onHorizontalDrag = { change, dragAmount ->
+                            change.consume()
+
+                            offsetX = (offsetX + dragAmount)
+                                .coerceIn(-maxSwipeOffset, maxSwipeOffset)
+                        },
+                        onDragEnd = {
+                            offsetX = when {
+                                offsetX > swipeThreshold -> maxSwipeOffset
+                                offsetX < -swipeThreshold -> -maxSwipeOffset
+                                else -> 0f
+                            }
+                        }
+                    )
+                }
+                .clickable {
+                    onEdit()
+                },
+            shape = shape,
+            colors = CardDefaults.cardColors(
+                containerColor = colors.surface
+            )
         ) {
             Row(
-                modifier = Modifier.weight(1f),
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(itemHeight)
+                    .padding(horizontal = 14.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(colors.borderLight),
-                    contentAlignment = Alignment.Center
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    AsyncImage(
-                        model = category?.iconUrl,
-                        contentDescription = null,
-                        modifier = Modifier.size(30.dp)
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(colors.borderLight),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = category?.iconUrl ?: "❓",
+                            style = typography.titleMedium
+                        )
+                    }
+
+                    Column(
+                        modifier = Modifier.padding(start = 12.dp)
+                    ) {
+                        Text(
+                            text = operation.title,
+                            style = typography.bodyLarge.copy(
+                                fontWeight = FontWeight.Medium
+                            ),
+                            color = colors.textPrimary
+                        )
+
+                        Text(
+                            text = category?.name ?: "Unknown",
+                            style = typography.bodySmall,
+                            color = colors.textSecondary
+                        )
+                    }
                 }
 
                 Column(
-                    modifier = Modifier.padding(start = 12.dp)
+                    horizontalAlignment = Alignment.End
                 ) {
                     Text(
-                        text = operation.title,
-                        style = typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                        color = colors.textPrimary
+                        text = if (isExpense) {
+                            "-${abs(operation.amount).formatSum()} ₽"
+                        } else {
+                            "+${operation.amount.formatSum()} ₽"
+                        },
+                        style = typography.bodyLarge.copy(
+                            fontWeight = FontWeight.SemiBold
+                        ),
+                        color = if (isExpense) {
+                            colors.expense
+                        } else {
+                            colors.income
+                        }
                     )
 
                     Text(
-                        text = category?.name ?: "Unknown",
+                        text = "Свайп: изменить / удалить",
                         style = typography.bodySmall,
                         color = colors.textSecondary
                     )
                 }
             }
-
-            Text(
-                text = "${operation.amount.formatSum()} ₽",
-                style = typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
-                color = if (isExpense) colors.expense else colors.income
-            )
         }
     }
 }
@@ -414,7 +604,7 @@ private fun getOperationWord(count: Int): String {
     }
 }
 
-enum class CategoryFilter {
+private enum class CategoryFilter {
     ALL,
     INCOME,
     EXPENSE

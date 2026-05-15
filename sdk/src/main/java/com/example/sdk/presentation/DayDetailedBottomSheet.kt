@@ -12,13 +12,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
 import com.example.sdk.domain.model.CalendarCategoryUi
 import com.example.sdk.domain.model.CalendarOperationUi
 import com.example.sdk.presentation.components.IconWrapper
@@ -74,7 +71,7 @@ fun DayDetailedBottomSheet(
             EmptyBottomSheetState()
         } else {
             dayOperations.forEach { operation ->
-                val category = categories.find { it.id == operation.category?.id }
+                val category = categories.find { it.id == operation.categoryId }
                 TransactionItem(
                     icon = category?.iconUrl ?: "❓",
                     name = operation.title,
@@ -128,10 +125,9 @@ private fun TransactionItem(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                AsyncImage(
-                    model = icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(30.dp)
+                Text(
+                    text = icon,
+                    style = typography.titleLarge
                 )
             }
 
