@@ -34,12 +34,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.example.sdk.domain.model.CalendarCategoryUi
 import com.example.sdk.domain.model.CalendarOperationUi
 import com.example.sdk.presentation.statistics.formatSum
@@ -274,11 +276,24 @@ fun DayCalendarGrid(
                             Row(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    text = category.iconUrl,
-                                    style = typography.titleMedium,
-                                    modifier = Modifier.padding(end = 8.dp)
-                                )
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .background(
+                                            color = getCategoryColor(category.color).copy(alpha = 0.12f),
+                                            shape = RoundedCornerShape(12.dp)
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    AsyncImage(
+                                        model = category.iconUrl,
+                                        contentDescription = category.name,
+                                        modifier = Modifier.size(28.dp),
+                                        contentScale = ContentScale.Fit
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.size(8.dp))
 
                                 Text(
                                     text = category.name,
@@ -538,13 +553,26 @@ private fun SwipeableTransactionItem(
                         modifier = Modifier
                             .size(44.dp)
                             .clip(RoundedCornerShape(14.dp))
-                            .background(colors.borderLight),
+                            .background(
+                                color = category?.color
+                                    ?.let { getCategoryColor(it).copy(alpha = 0.12f) }
+                                    ?: colors.borderLight
+                            ),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = category?.iconUrl ?: "❓",
-                            style = typography.titleMedium
-                        )
+                        if (category != null) {
+                            AsyncImage(
+                                model = category.iconUrl,
+                                contentDescription = category.name,
+                                modifier = Modifier.size(30.dp),
+                                contentScale = ContentScale.Fit
+                            )
+                        } else {
+                            Text(
+                                text = "❓",
+                                style = typography.titleMedium
+                            )
+                        }
                     }
 
                     Column(
@@ -601,6 +629,14 @@ private fun getOperationWord(count: Int): String {
         count % 10 == 1 && count % 100 != 11 -> "операция"
         count % 10 in 2..4 && count % 100 !in 12..14 -> "операции"
         else -> "операций"
+    }
+}
+
+private fun getCategoryColor(color: String): Color {
+    return try {
+        Color(android.graphics.Color.parseColor(color))
+    } catch (e: Exception) {
+        Color(0xFF9CA3AF)
     }
 }
 

@@ -16,6 +16,8 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import com.example.sdk.domain.model.CalendarCategoryUi
 import com.example.sdk.domain.model.CalendarOperationUi
 import com.example.sdk.presentation.components.IconWrapper
@@ -125,10 +127,19 @@ private fun TransactionItem(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = icon,
-                    style = typography.titleLarge
-                )
+                if (icon.startsWith("http")) {
+                    AsyncImage(
+                        model = icon,
+                        contentDescription = category,
+                        modifier = Modifier.size(32.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                } else {
+                    Text(
+                        text = icon,
+                        style = typography.titleLarge
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.width(12.dp))

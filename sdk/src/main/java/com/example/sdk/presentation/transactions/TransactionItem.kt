@@ -16,6 +16,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import com.example.sdk.domain.model.CalendarCategoryUi
 import com.example.sdk.domain.model.CalendarOperationUi
 import com.example.sdk.ui.theme.CalendarTheme
@@ -42,11 +47,27 @@ fun TransactionItem(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = category?.iconUrl ?: "❓",
-                style = typography.titleLarge,
-                modifier = Modifier.size(40.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(colors.borderLight),
+                contentAlignment = Alignment.Center
+            ) {
+                if (category != null) {
+                    AsyncImage(
+                        model = category.iconUrl,
+                        contentDescription = category.name,
+                        modifier = Modifier.size(30.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                } else {
+                    Text(
+                        text = "❓",
+                        style = typography.titleLarge
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.width(16.dp))
 
