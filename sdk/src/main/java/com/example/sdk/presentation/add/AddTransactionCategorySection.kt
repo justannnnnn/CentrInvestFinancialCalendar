@@ -24,6 +24,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import com.example.sdk.domain.model.CalendarCategoryUi
 import com.example.sdk.ui.theme.CalendarTheme
 
@@ -80,17 +83,12 @@ private fun CategorySelectorField(
             .padding(horizontal = 14.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(28.dp)
-                .background(colors.addSheetCategoryChip, RoundedCornerShape(8.dp)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = selectedCategory?.iconUrl ?: "❓",
-                style = typography.bodyMedium
-            )
-        }
+        CategoryIcon(
+            iconUrl = selectedCategory?.iconUrl,
+            color = selectedCategory?.color,
+            fallback = "❓",
+            size = 28
+        )
 
         Spacer(modifier = Modifier.width(12.dp))
 
@@ -137,20 +135,12 @@ private fun CategoryDropdownCard(
                     .padding(horizontal = 14.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(28.dp)
-                        .background(
-                            colors.addSheetCategoryChip,
-                            RoundedCornerShape(8.dp)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = category.iconUrl,
-                        style = typography.bodyMedium
-                    )
-                }
+                CategoryIcon(
+                    iconUrl = category.iconUrl,
+                    color = category.color,
+                    fallback = "❓",
+                    size = 28
+                )
 
                 Spacer(modifier = Modifier.width(12.dp))
 
@@ -179,5 +169,51 @@ private fun CategoryDropdownCard(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun CategoryIcon(
+    iconUrl: String?,
+    color: String?,
+    fallback: String,
+    size: Int
+) {
+    val colors = CalendarTheme.colors
+    val typography = CalendarTheme.typography
+
+    Box(
+        modifier = Modifier
+            .size(size.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(
+                color = color
+                    ?.let { parseCategoryColor(it).copy(alpha = 0.12f) }
+                    ?: colors.addSheetCategoryChip,
+                shape = RoundedCornerShape(8.dp)
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        if (!iconUrl.isNullOrBlank() && iconUrl.startsWith("http")) {
+            AsyncImage(
+                model = iconUrl,
+                contentDescription = null,
+                modifier = Modifier.size((size - 6).dp),
+                contentScale = ContentScale.Fit
+            )
+        } else {
+            Text(
+                text = iconUrl?.takeIf { it.isNotBlank() } ?: fallback,
+                style = typography.bodyMedium
+            )
+        }
+    }
+}
+
+private fun parseCategoryColor(color: String): Color {
+    return try {
+        Color(android.graphics.Color.parseColor(color))
+    } catch (e: Exception) {
+        Color(0xFF9CA3AF)
     }
 }

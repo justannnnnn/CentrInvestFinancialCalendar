@@ -32,7 +32,7 @@ data class CalendarOperation(
     val id: Int? = null,
     val title: String,               // "Покупка кофе"
     val amount: Long,
-    @SerialName("date_time")// Signed в копейках
+    @SerialName("date_time")  // Signed в копейках
     val dateTime: Long,              // Unix Timestamp в UTC
     val categoryId: Int,             // ссылка на CalendarCategory.id
     val isCustom: Boolean,           // true = вымышленная/создана юзером, false = реальная банковская
