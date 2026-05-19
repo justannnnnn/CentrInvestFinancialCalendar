@@ -163,6 +163,20 @@ class CalendarViewModel @Inject constructor(
                 }
             }
 
+            is CalendarUiAction.OnPeriodSelected -> {
+                val selectedCalendar = action.calendar.clone() as Calendar
+
+                _uiState.update {
+                    it.copy(
+                        selectedPeriod = selectedCalendar,
+                        selectedDate = selectedCalendar.clone() as Calendar,
+                        showBottomSheet = false
+                    )
+                }
+
+                rebuildMonth()
+            }
+
             is CalendarUiAction.OnViewModeSelected -> {
                 _uiState.update { it.copy(selectedViewMode = action.mode) }
             }

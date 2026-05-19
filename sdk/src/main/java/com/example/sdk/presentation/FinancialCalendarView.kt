@@ -43,6 +43,7 @@ import com.example.sdk.presentation.components.ThemeCreationModeSheet
 import com.example.sdk.presentation.models.ThemeCustomizationMode
 import com.example.sdk.presentation.themeeditor.FullThemeEditorScreen
 import java.util.Locale
+import java.util.Calendar
 
 private data class CalendarAnimatedContentState(
     val viewMode: ViewModeTab,
@@ -80,6 +81,7 @@ fun FinancialCalendarView(
     }
 
     var showThemePickerSheet by remember { mutableStateOf(false) }
+    var showPeriodPickerSheet by remember { mutableStateOf(false) }
     var showThemeCreationModeSheet by remember { mutableStateOf(false) }
     var showPartialEditorSheet by remember { mutableStateOf(false) }
     var showFullEditorSheet by remember { mutableStateOf(false) }
@@ -285,6 +287,9 @@ fun FinancialCalendarView(
                         activeThemePrimaryColor = colors.primary,
                         onPrevMonth = { goToPreviousPeriod() },
                         onNextMonth = { goToNextPeriod() },
+                        onPeriodClick = {
+                            showPeriodPickerSheet = true
+                        },
                         onThemeClick = { showThemePickerSheet = true },
                         onAddClick = { viewModel.onAction(CalendarUiAction.OnAddClick) }
                     )
@@ -474,6 +479,83 @@ fun FinancialCalendarView(
                         viewModel.saveOperation(operation)
                     }
                 )
+            }
+
+            if (showPeriodPickerSheet) {
+                val datePickerState = rememberDatePickerState(
+                    initialSelectedDateMillis = uiState.selectedPeriod.timeInMillis
+                )
+
+                ModalBottomSheet(
+                    onDismissRequest = {
+                        showPeriodPickerSheet = false
+                    },
+                    sheetState = rememberModalBottomSheetState(
+                        skipPartiallyExpanded = true
+                    ),
+                    containerColor = colors.surface
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                    ) {
+                        Text(
+                            text = "Выбор даты",
+                            style = CalendarTheme.typography.titleLarge,
+                            color = colors.textPrimary
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        DatePicker(
+                            state = datePickerState,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            TextButton(
+                                onClick = {
+                                    showPeriodPickerSheet = false
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    text = "Отмена",
+                                    color = colors.textSecondary
+                                )
+                            }
+
+                            Button(
+                                onClick = {
+                                    val selectedMillis = datePickerState.selectedDateMillis
+
+                                    if (selectedMillis != null) {
+                                        val selectedCalendar = Calendar.getInstance().apply {
+                                            timeInMillis = selectedMillis
+                                        }
+
+                                        viewModel.onAction(
+                                            CalendarUiAction.OnPeriodSelected(selectedCalendar)
+                                        )
+                                    }
+
+                                    showPeriodPickerSheet = false
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Применить")
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+                }
             }
 
             if (showThemePickerSheet) {

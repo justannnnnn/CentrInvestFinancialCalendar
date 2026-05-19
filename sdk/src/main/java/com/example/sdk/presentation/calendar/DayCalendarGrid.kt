@@ -15,12 +15,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -34,13 +37,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 import coil.compose.AsyncImage
 import com.example.sdk.domain.model.CalendarCategoryUi
 import com.example.sdk.domain.model.CalendarOperationUi
@@ -75,6 +80,10 @@ fun DayCalendarGrid(
         mutableStateOf(CategoryFilter.ALL)
     }
 
+    var selectedSortMode by remember {
+        mutableStateOf(DayOperationSortMode.DEFAULT)
+    }
+
     val dateFormat = SimpleDateFormat("d MMMM, EEEE", Locale("ru"))
     val formattedDate = dateFormat.format(selectedDateCalendar.time)
         .replaceFirstChar { it.uppercase() }
@@ -91,6 +100,13 @@ fun DayCalendarGrid(
         CategoryFilter.ALL -> operations
         CategoryFilter.INCOME -> operations.filter { it.amount > 0.0 }
         CategoryFilter.EXPENSE -> operations.filter { it.amount < 0.0 }
+    }
+
+    val sortedOperations = remember(filteredOperations, selectedSortMode) {
+        sortDayOperations(
+            operations = filteredOperations,
+            sortMode = selectedSortMode
+        )
     }
 
     val totalAmount = filteredOperations.sumOf {
@@ -280,7 +296,8 @@ fun DayCalendarGrid(
                                     modifier = Modifier
                                         .size(40.dp)
                                         .background(
-                                            color = getCategoryColor(category.color).copy(alpha = 0.12f),
+                                            color = getCategoryColor(category.color)
+                                                .copy(alpha = 0.12f),
                                             shape = RoundedCornerShape(12.dp)
                                         ),
                                     contentAlignment = Alignment.Center
@@ -346,15 +363,15 @@ fun DayCalendarGrid(
         }
 
         item {
-            Text(
-                text = "Все операции",
-                style = typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = colors.textPrimary,
-                modifier = Modifier.padding(vertical = 8.dp)
+            OperationsHeaderWithSort(
+                selectedSortMode = selectedSortMode,
+                onSortModeSelected = { mode ->
+                    selectedSortMode = mode
+                }
             )
         }
 
-        if (filteredOperations.isEmpty()) {
+        if (sortedOperations.isEmpty()) {
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -379,7 +396,7 @@ fun DayCalendarGrid(
             }
         } else {
             items(
-                items = filteredOperations,
+                items = sortedOperations,
                 key = { operation ->
                     "${operation.id}_${operation.dateTime}_${operation.title}"
                 }
@@ -403,6 +420,186 @@ fun DayCalendarGrid(
 
         item {
             Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
+}
+
+@Composable
+private fun OperationsHeaderWithSort(
+    selectedSortMode: DayOperationSortMode,
+    onSortModeSelected: (DayOperationSortMode) -> Unit
+) {
+    val colors = CalendarTheme.colors
+    val typography = CalendarTheme.typography
+
+    var expanded by remember {
+        mutableStateOf(false)
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+            Text(
+                text = "Все операции",
+                style = typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = colors.textPrimary
+            )
+
+            Text(
+                text = selectedSortMode.title,
+                style = typography.bodySmall,
+                color = colors.textSecondary,
+                modifier = Modifier.padding(top = 2.dp)
+            )
+        }
+
+        Box {
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(
+                        if (expanded) {
+                            colors.selectedBackground
+                        } else {
+                            colors.borderLight
+                        }
+                    )
+                    .border(
+                        width = 1.dp,
+                        color = if (expanded) {
+                            colors.selectedBorder
+                        } else {
+                            Color.Transparent
+                        },
+                        shape = RoundedCornerShape(14.dp)
+                    )
+                    .clickable {
+                        expanded = !expanded
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Sort,
+                    contentDescription = "Сортировка",
+                    tint = if (expanded) colors.primary else colors.textSecondary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            if (expanded) {
+                SortPopupMenu(
+                    selectedSortMode = selectedSortMode,
+                    onDismiss = {
+                        expanded = false
+                    },
+                    onSortModeSelected = { mode ->
+                        onSortModeSelected(mode)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SortPopupMenu(
+    selectedSortMode: DayOperationSortMode,
+    onDismiss: () -> Unit,
+    onSortModeSelected: (DayOperationSortMode) -> Unit
+) {
+    val colors = CalendarTheme.colors
+
+    Popup(
+        alignment = Alignment.TopEnd,
+        offset = IntOffset(x = 0, y = 48),
+        onDismissRequest = onDismiss,
+        properties = PopupProperties(
+            focusable = true,
+            dismissOnBackPress = true,
+            dismissOnClickOutside = true
+        )
+    ) {
+        Card(
+            modifier = Modifier
+                .width(214.dp)
+                .border(
+                    width = 1.dp,
+                    color = colors.borderLight,
+                    shape = RoundedCornerShape(20.dp)
+                ),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = colors.surface
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(vertical = 6.dp)
+            ) {
+                DayOperationSortMode.entries.forEach { mode ->
+                    SortPopupRow(
+                        mode = mode,
+                        isSelected = mode == selectedSortMode,
+                        onClick = {
+                            onSortModeSelected(mode)
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SortPopupRow(
+    mode: DayOperationSortMode,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val colors = CalendarTheme.colors
+    val typography = CalendarTheme.typography
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(38.dp)
+            .padding(horizontal = 6.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(
+                if (isSelected) {
+                    colors.selectedBackground
+                } else {
+                    Color.Transparent
+                }
+            )
+            .clickable { onClick() }
+            .padding(horizontal = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = mode.menuTitle,
+            style = typography.bodySmall.copy(
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+            ),
+            color = if (isSelected) colors.primary else colors.textPrimary,
+            modifier = Modifier.weight(1f)
+        )
+
+        if (isSelected) {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = null,
+                tint = colors.primary,
+                modifier = Modifier.size(16.dp)
+            )
         }
     }
 }
@@ -555,7 +752,9 @@ private fun SwipeableTransactionItem(
                             .clip(RoundedCornerShape(14.dp))
                             .background(
                                 color = category?.color
-                                    ?.let { getCategoryColor(it).copy(alpha = 0.12f) }
+                                    ?.let {
+                                        getCategoryColor(it).copy(alpha = 0.12f)
+                                    }
                                     ?: colors.borderLight
                             ),
                         contentAlignment = Alignment.Center
@@ -624,6 +823,65 @@ private fun SwipeableTransactionItem(
     }
 }
 
+private fun sortDayOperations(
+    operations: List<CalendarOperationUi>,
+    sortMode: DayOperationSortMode
+): List<CalendarOperationUi> {
+    return when (sortMode) {
+        DayOperationSortMode.DEFAULT -> operations
+
+        DayOperationSortMode.DATE_NEW_FIRST -> {
+            operations.sortedByDescending { operation ->
+                operation.dateTime
+            }
+        }
+
+        DayOperationSortMode.DATE_OLD_FIRST -> {
+            operations.sortedBy { operation ->
+                operation.dateTime
+            }
+        }
+
+        DayOperationSortMode.AMOUNT_DESC -> {
+            operations.sortedByDescending { operation ->
+                abs(operation.amount)
+            }
+        }
+
+        DayOperationSortMode.AMOUNT_ASC -> {
+            operations.sortedBy { operation ->
+                abs(operation.amount)
+            }
+        }
+
+        DayOperationSortMode.INCOME_FIRST -> {
+            operations.sortedWith(
+                compareByDescending<CalendarOperationUi> { operation ->
+                    operation.amount > 0.0
+                }.thenByDescending { operation ->
+                    abs(operation.amount)
+                }
+            )
+        }
+
+        DayOperationSortMode.EXPENSE_FIRST -> {
+            operations.sortedWith(
+                compareByDescending<CalendarOperationUi> { operation ->
+                    operation.amount < 0.0
+                }.thenByDescending { operation ->
+                    abs(operation.amount)
+                }
+            )
+        }
+
+        DayOperationSortMode.TITLE_ASC -> {
+            operations.sortedBy { operation ->
+                operation.title.lowercase(Locale.ROOT)
+            }
+        }
+    }
+}
+
 private fun getOperationWord(count: Int): String {
     return when {
         count % 10 == 1 && count % 100 != 11 -> "операция"
@@ -644,4 +902,49 @@ private enum class CategoryFilter {
     ALL,
     INCOME,
     EXPENSE
+}
+
+private enum class DayOperationSortMode(
+    val title: String,
+    val menuTitle: String
+) {
+    DEFAULT(
+        title = "По умолчанию",
+        menuTitle = "По умолчанию"
+    ),
+
+    DATE_NEW_FIRST(
+        title = "Сначала новые",
+        menuTitle = "Новые"
+    ),
+
+    DATE_OLD_FIRST(
+        title = "Сначала старые",
+        menuTitle = "Старые"
+    ),
+
+    AMOUNT_DESC(
+        title = "Сумма по убыванию",
+        menuTitle = "Сумма ↓"
+    ),
+
+    AMOUNT_ASC(
+        title = "Сумма по возрастанию",
+        menuTitle = "Сумма ↑"
+    ),
+
+    INCOME_FIRST(
+        title = "Сначала доходы",
+        menuTitle = "Доходы"
+    ),
+
+    EXPENSE_FIRST(
+        title = "Сначала расходы",
+        menuTitle = "Расходы"
+    ),
+
+    TITLE_ASC(
+        title = "По названию",
+        menuTitle = "Название"
+    )
 }

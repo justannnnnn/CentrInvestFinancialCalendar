@@ -46,6 +46,7 @@ fun CalendarHeader(
     activeThemePrimaryColor: Color,
     onPrevMonth: () -> Unit,
     onNextMonth: () -> Unit,
+    onPeriodClick: () -> Unit,
     onThemeClick: () -> Unit,
     onAddClick: () -> Unit
 ) {
@@ -79,7 +80,7 @@ fun CalendarHeader(
                             "${getMonthNameNominative(calendar)} ${calendar.get(Calendar.YEAR)}"
                         }
                     },
-                    onPeriodSelectorClick = {}
+                    onPeriodSelectorClick = onPeriodClick
                 )
 
                 ArrowButton(

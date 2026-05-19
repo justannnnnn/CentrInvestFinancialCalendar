@@ -39,6 +39,10 @@ sealed interface CalendarUiAction {
 
     data class OnDaySelected(val day: Int) : CalendarUiAction
 
+    data class OnPeriodSelected(
+        val calendar: Calendar
+    ) : CalendarUiAction
+
     data class OnViewModeSelected(val mode: ViewModeTab) : CalendarUiAction
 
     data class OnEditOperationClick(
