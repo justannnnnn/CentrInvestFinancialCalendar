@@ -31,6 +31,8 @@ import com.example.sdk.presentation.calendar.WeekCalendarGrid
 import com.example.sdk.presentation.components.CalendarHeader
 import com.example.sdk.presentation.components.ThemePickerBottomSheet
 import com.example.sdk.presentation.components.ViewModeTabs
+import com.example.sdk.presentation.components.PeriodPickerOverlay
+import com.example.sdk.presentation.components.PeriodAnalyticsSheet
 import com.example.sdk.presentation.models.CustomCalendarTheme
 import com.example.sdk.presentation.models.ThemeSelection
 import com.example.sdk.presentation.models.ViewModeTab
@@ -482,80 +484,48 @@ fun FinancialCalendarView(
             }
 
             if (showPeriodPickerSheet) {
-                val datePickerState = rememberDatePickerState(
-                    initialSelectedDateMillis = uiState.selectedPeriod.timeInMillis
-                )
-
-                ModalBottomSheet(
-                    onDismissRequest = {
+                PeriodPickerOverlay(
+                    initialCalendar = uiState.selectedPeriod,
+                    onDismiss = {
                         showPeriodPickerSheet = false
                     },
-                    sheetState = rememberModalBottomSheetState(
-                        skipPartiallyExpanded = true
-                    ),
-                    containerColor = colors.surface
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp)
-                    ) {
-                        Text(
-                            text = "Выбор даты",
-                            style = CalendarTheme.typography.titleLarge,
-                            color = colors.textPrimary
+                    onDaySelected = { selectedDay ->
+                        viewModel.onAction(
+                            CalendarUiAction.OnExactDaySelected(selectedDay)
                         )
 
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        DatePicker(
-                            state = datePickerState,
-                            modifier = Modifier.fillMaxWidth()
+                        showPeriodPickerSheet = false
+                    },
+                    onApplyPeriod = { startDate, endDate ->
+                        viewModel.onAction(
+                            CalendarUiAction.OnAnalyticsPeriodSelected(
+                                startDate = startDate,
+                                endDate = endDate
+                            )
                         )
 
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            TextButton(
-                                onClick = {
-                                    showPeriodPickerSheet = false
-                                },
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(
-                                    text = "Отмена",
-                                    color = colors.textSecondary
-                                )
-                            }
-
-                            Button(
-                                onClick = {
-                                    val selectedMillis = datePickerState.selectedDateMillis
-
-                                    if (selectedMillis != null) {
-                                        val selectedCalendar = Calendar.getInstance().apply {
-                                            timeInMillis = selectedMillis
-                                        }
-
-                                        viewModel.onAction(
-                                            CalendarUiAction.OnPeriodSelected(selectedCalendar)
-                                        )
-                                    }
-
-                                    showPeriodPickerSheet = false
-                                },
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text("Применить")
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
+                        showPeriodPickerSheet = false
                     }
-                }
+                )
+            }
+
+            val analyticsStart = uiState.periodAnalyticsStart
+            val analyticsEnd = uiState.periodAnalyticsEnd
+
+            if (
+                uiState.isPeriodAnalyticsVisible &&
+                analyticsStart != null &&
+                analyticsEnd != null
+            ) {
+                PeriodAnalyticsSheet(
+                    startDate = analyticsStart,
+                    endDate = analyticsEnd,
+                    operations = uiState.allOperations,
+                    categories = uiState.categories,
+                    onDismiss = {
+                        viewModel.onAction(CalendarUiAction.OnDismissPeriodAnalytics)
+                    }
+                )
             }
 
             if (showThemePickerSheet) {

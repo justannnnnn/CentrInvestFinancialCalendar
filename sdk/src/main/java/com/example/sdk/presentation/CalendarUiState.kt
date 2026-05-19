@@ -2,9 +2,9 @@ package com.example.sdk.presentation
 
 import android.os.Build
 import androidx.annotation.RequiresApi
-import com.example.sdk.domain.model.DayData
-import com.example.sdk.domain.model.CalendarOperationUi
 import com.example.sdk.domain.model.CalendarCategoryUi
+import com.example.sdk.domain.model.CalendarOperationUi
+import com.example.sdk.domain.model.DayData
 import com.example.sdk.presentation.models.ViewModeTab
 import java.util.Calendar
 
@@ -14,9 +14,12 @@ data class CalendarUiState(
     val selectedDate: Calendar? = null,
     val daysData: Map<Int, DayData> = emptyMap(),
     val categories: List<CalendarCategoryUi> = emptyList(),
+    val allOperations: List<CalendarOperationUi> = emptyList(),
+
     val viewModeTabs: List<ViewModeTab> =
         listOf(ViewModeTab.Month, ViewModeTab.Week, ViewModeTab.Day),
     val selectedViewMode: ViewModeTab = ViewModeTab.Month,
+
     val showBottomSheet: Boolean = false,
     val isAddTransactionVisible: Boolean = false,
 
@@ -27,7 +30,11 @@ data class CalendarUiState(
     val isDeletingOperation: Boolean = false,
 
     val addOperationError: String? = null,
-    val deleteOperationError: String? = null
+    val deleteOperationError: String? = null,
+
+    val periodAnalyticsStart: Calendar? = null,
+    val periodAnalyticsEnd: Calendar? = null,
+    val isPeriodAnalyticsVisible: Boolean = false
 ) {
     val allMonthTransactions: List<CalendarOperationUi>
         get() = daysData.values.flatMap { it.operations }
@@ -42,6 +49,17 @@ sealed interface CalendarUiAction {
     data class OnPeriodSelected(
         val calendar: Calendar
     ) : CalendarUiAction
+
+    data class OnExactDaySelected(
+        val calendar: Calendar
+    ) : CalendarUiAction
+
+    data class OnAnalyticsPeriodSelected(
+        val startDate: Calendar,
+        val endDate: Calendar
+    ) : CalendarUiAction
+
+    data object OnDismissPeriodAnalytics : CalendarUiAction
 
     data class OnViewModeSelected(val mode: ViewModeTab) : CalendarUiAction
 

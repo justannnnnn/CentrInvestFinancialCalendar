@@ -10,9 +10,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -24,10 +25,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.sdk.R
-import com.example.sdk.presentation.models.ViewModeTab
 import com.example.sdk.presentation.models.ThemeSelection
+import com.example.sdk.presentation.models.ViewModeTab
 import com.example.sdk.sdk.CalendarThemePreset
 import com.example.sdk.ui.theme.CalendarTheme
 import com.example.sdk.ui.theme.GraphitePrimary
@@ -52,54 +55,149 @@ fun CalendarHeader(
 ) {
     val colors = CalendarTheme.colors
 
-    Box(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(colors.surface)
-            .padding(top = 8.dp, start = 16.dp, end = 16.dp, bottom = 8.dp)
+            .padding(top = 8.dp, start = 12.dp, end = 12.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
+        PeriodNavigationChip(
+            title = when (selectedViewMode) {
+                ViewModeTab.Day -> getDayDate(calendar)
+                ViewModeTab.Week -> getWeekRange(calendar)
+                ViewModeTab.Month -> {
+                    "${getMonthNameNominative(calendar)} ${calendar.get(Calendar.YEAR)}"
+                }
+            },
+            onPrevClick = onPrevMonth,
+            onNextClick = onNextMonth,
+            onPeriodClick = onPeriodClick,
+            modifier = Modifier
+                .weight(1f)
+                .padding(end = 10.dp)
+        )
+
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier.fillMaxWidth()
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ThemeSwitcherButton(
+                activeThemeSelection = activeThemeSelection,
+                activeThemePrimaryColor = activeThemePrimaryColor,
+                onClick = onThemeClick
+            )
+
+            PlusButton(onClick = onAddClick)
+        }
+    }
+}
+
+@Composable
+private fun PeriodNavigationChip(
+    title: String,
+    onPrevClick: () -> Unit,
+    onNextClick: () -> Unit,
+    onPeriodClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val colors = CalendarTheme.colors
+    val typography = CalendarTheme.typography
+
+    Row(
+        modifier = modifier
+            .height(48.dp)
+            .widthIn(min = 150.dp)
+            .clip(RoundedCornerShape(18.dp))
+            .background(colors.background)
+            .border(
+                width = 1.dp,
+                color = colors.borderLight,
+                shape = RoundedCornerShape(18.dp)
+            )
+            .padding(horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        HeaderSmallIconButton(
+            onClick = onPrevClick
+        ) {
+            val icons = CalendarTheme.icons
+
+            IconWrapper(
+                iconRes = icons.arrowLeft,
+                color = colors.textSecondary,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .height(40.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .clickable { onPeriodClick() }
+                .padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = title,
+                style = typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                color = colors.textPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Box(
+                modifier = Modifier
+                    .padding(start = 6.dp)
+                    .size(16.dp),
+                contentAlignment = Alignment.Center
             ) {
-                ArrowButton(
-                    isLeft = true,
-                    onClick = onPrevMonth
-                )
-
-                PeriodSelector(
-                    title = when (selectedViewMode) {
-                        ViewModeTab.Day -> getDayDate(calendar)
-                        ViewModeTab.Week -> getWeekRange(calendar)
-                        ViewModeTab.Month -> {
-                            "${getMonthNameNominative(calendar)} ${calendar.get(Calendar.YEAR)}"
-                        }
-                    },
-                    onPeriodSelectorClick = onPeriodClick
-                )
-
-                ArrowButton(
-                    isLeft = false,
-                    onClick = onNextMonth
+                IconWrapper(
+                    modifier = Modifier.fillMaxSize(),
+                    iconRes = R.drawable.calendar,
+                    color = colors.textSecondary
                 )
             }
+        }
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                ThemeSwitcherButton(
-                    activeThemeSelection = activeThemeSelection,
-                    activeThemePrimaryColor = activeThemePrimaryColor,
-                    onClick = onThemeClick
-                )
-                PlusButton(onClick = onAddClick)
-            }
+        HeaderSmallIconButton(
+            onClick = onNextClick
+        ) {
+            val icons = CalendarTheme.icons
+
+            IconWrapper(
+                iconRes = icons.arrowRight,
+                color = colors.textSecondary,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun HeaderSmallIconButton(
+    onClick: () -> Unit,
+    content: @Composable () -> Unit
+) {
+    val colors = CalendarTheme.colors
+
+    Box(
+        modifier = Modifier
+            .size(38.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(30.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(colors.surface),
+            contentAlignment = Alignment.Center
+        ) {
+            content()
         }
     }
 }
@@ -124,7 +222,7 @@ private fun ThemeSwitcherButton(
 
     Box(
         modifier = Modifier
-            .size(40.dp)
+            .size(42.dp)
             .clip(CircleShape)
             .background(activeColor.copy(alpha = 0.16f))
             .border(
@@ -149,7 +247,6 @@ private fun ThemeWandGlyph(
         modifier = Modifier.size(24.dp),
         contentAlignment = Alignment.Center
     ) {
-        // Палочка
         Box(
             modifier = Modifier
                 .size(width = 18.dp, height = 4.dp)
@@ -159,7 +256,6 @@ private fun ThemeWandGlyph(
                 .background(colors.textPrimary.copy(alpha = 0.78f))
         )
 
-        // Наконечник
         Box(
             modifier = Modifier
                 .size(10.dp)
@@ -174,7 +270,6 @@ private fun ThemeWandGlyph(
                 )
         )
 
-        // Блестка
         Box(
             modifier = Modifier
                 .size(5.dp)
@@ -223,69 +318,6 @@ private fun PlusButton(onClick: () -> Unit) {
 }
 
 @Composable
-private fun PeriodSelector(
-    title: String,
-    onPeriodSelectorClick: () -> Unit
-) {
-    val colors = CalendarTheme.colors
-    val typography = CalendarTheme.typography
-
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier
-            .height(40.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onPeriodSelectorClick)
-            .padding(horizontal = 12.dp)
-    ) {
-        Text(
-            modifier = Modifier.padding(top = 2.dp),
-            text = title,
-            style = typography.bodyLarge,
-            color = colors.textPrimary
-        )
-
-        Box(
-            modifier = Modifier.size(16.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            IconWrapper(
-                modifier = Modifier.fillMaxSize(),
-                iconRes = R.drawable.calendar,
-                color = colors.textSecondary
-            )
-        }
-    }
-}
-
-@Composable
-private fun ArrowButton(
-    isLeft: Boolean,
-    onClick: () -> Unit
-) {
-    val colors = CalendarTheme.colors
-    val icons = CalendarTheme.icons
-
-    Box(
-        modifier = Modifier
-            .size(40.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
-            .padding(8.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        val iconRes = if (isLeft) icons.arrowLeft else icons.arrowRight
-
-        IconWrapper(
-            iconRes = iconRes,
-            color = colors.textTertiary,
-            modifier = Modifier.size(20.dp)
-        )
-    }
-}
-
-@Composable
 fun IconWrapper(
     modifier: Modifier = Modifier,
     @DrawableRes iconRes: Int,
@@ -299,11 +331,25 @@ fun IconWrapper(
     )
 }
 
-fun getMonthNameNominative(calendar: Calendar, locale: Locale = Locale("ru", "RU")): String {
+fun getMonthNameNominative(
+    calendar: Calendar,
+    locale: Locale = Locale("ru", "RU")
+): String {
     val monthIndex = calendar.get(Calendar.MONTH)
+
     val ruMonths = arrayOf(
-        "январь", "февраль", "март", "апрель", "май", "июнь",
-        "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"
+        "январь",
+        "февраль",
+        "март",
+        "апрель",
+        "май",
+        "июнь",
+        "июль",
+        "август",
+        "сентябрь",
+        "октябрь",
+        "ноябрь",
+        "декабрь"
     )
 
     val name = if (locale.language == "ru") {
@@ -316,21 +362,62 @@ fun getMonthNameNominative(calendar: Calendar, locale: Locale = Locale("ru", "RU
 }
 
 private fun getWeekRange(calendar: Calendar): String {
-    val dayFormat = SimpleDateFormat("d", Locale("ru"))
-    val monthFormat = SimpleDateFormat("MMMM yyyy", Locale("ru"))
-    val calendarCopy = calendar.clone() as Calendar
+    val start = (calendar.clone() as Calendar).apply {
+        firstDayOfWeek = Calendar.MONDAY
 
-    calendarCopy.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
-    val startDay = dayFormat.format(calendarCopy.time)
+        while (get(Calendar.DAY_OF_WEEK) != Calendar.MONDAY) {
+            add(Calendar.DAY_OF_MONTH, -1)
+        }
+    }
 
-    calendarCopy.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY)
-    val endDay = dayFormat.format(calendarCopy.time)
-    val monthYear = monthFormat.format(calendarCopy.time)
+    val end = (start.clone() as Calendar).apply {
+        add(Calendar.DAY_OF_MONTH, 6)
+    }
 
-    return "$startDay - $endDay $monthYear"
+    val startDay = start.get(Calendar.DAY_OF_MONTH)
+    val endDay = end.get(Calendar.DAY_OF_MONTH)
+
+    val startMonth = getMonthNameGenitive(start)
+    val endMonth = getMonthNameGenitive(end)
+
+    val startYear = start.get(Calendar.YEAR)
+    val endYear = end.get(Calendar.YEAR)
+
+    return when {
+        startYear != endYear -> {
+            "$startDay $startMonth $startYear - $endDay $endMonth $endYear"
+        }
+
+        start.get(Calendar.MONTH) != end.get(Calendar.MONTH) -> {
+            "$startDay $startMonth - $endDay $endMonth $endYear"
+        }
+
+        else -> {
+            "$startDay - $endDay $endMonth $endYear"
+        }
+    }
 }
 
 private fun getDayDate(calendar: Calendar): String {
-    val dateFormat = SimpleDateFormat("d MMMM yyyy", Locale("ru"))
+    val dateFormat = SimpleDateFormat("d MMMM yyyy", Locale("ru", "RU"))
     return dateFormat.format(calendar.time)
+}
+
+private fun getMonthNameGenitive(calendar: Calendar): String {
+    val months = arrayOf(
+        "января",
+        "февраля",
+        "марта",
+        "апреля",
+        "мая",
+        "июня",
+        "июля",
+        "августа",
+        "сентября",
+        "октября",
+        "ноября",
+        "декабря"
+    )
+
+    return months[calendar.get(Calendar.MONTH)]
 }
